@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+  <head>
+    
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,minimum-scale=1,maximum-scale=1">
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+  <meta name="description" content="SS安装记录"/>
+
+
+
+
+
+
+
+
+  <link rel="alternate" href="/default" title="Ran">
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=1.1" />
+
+
+
+<link rel="canonical" href="http://yoursite.com/2020/02/09/ss-server/"/>
+
+
+<meta name="description" content="记录一下我安装ss-server的过程，忘记的时候可以回来看一下。 系统环境：Centos7">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SS安装记录">
+<meta property="og:url" content="http://yoursite.com/2020/02/09/ss-server/index.html">
+<meta property="og:site_name" content="Ran">
+<meta property="og:description" content="记录一下我安装ss-server的过程，忘记的时候可以回来看一下。 系统环境：Centos7">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-02-09T06:29:03.000Z">
+<meta property="article:modified_time" content="2020-07-01T13:31:55.509Z">
+<meta property="article:author" content="ranjiayu">
+<meta property="article:tag" content="ranjiayu">
+<meta property="article:tag" content="blog">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="stylesheet" type="text/css" href="/css/style.css?v=1.1" />
+<link href='https://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet'>
+
+
+
+
+
+<script type="text/javascript">
+  var themeConfig = {
+    fancybox: {
+      enable: false
+    },
+  };
+</script>
+
+
+
+
+  
+
+
+
+    <title> SS安装记录 - Ran </title>
+  <meta name="generator" content="Hexo 4.2.1"></head>
+
+  <body>
+    <div id="page">
+      <header id="masthead"><div class="site-header-inner">
+    <h1 class="site-title">
+        <a href="/." class="logo">Ran</a>
+    </h1>
+
+    <nav id="nav-top">
+        
+            <ul id="menu-top" class="nav-top-items">
+                
+                    <li class="menu-item">
+                        <a href="/archives">
+                            
+                            
+                                Archives
+                            
+                        </a>
+                    </li>
+                
+                    <li class="menu-item">
+                        <a href="/about">
+                            
+                            
+                                About
+                            
+                        </a>
+                    </li>
+                
+            </ul>
+        
+  </nav>
+</div>
+
+      </header>
+      <div id="content">
+        
+    <div id="primary">
+        
+  <article class="post">
+    <header class="post-header">
+      <h1 class="post-title">
+        
+          SS安装记录
+        
+      </h1>
+
+      <time class="post-time">
+          2月 09 2020
+      </time>
+    </header>
+
+
+
+    
+            <div class="post-content">
+            <p>记录一下我安装ss-server的过程，忘记的时候可以回来看一下。</p>
+<p>系统环境：Centos7</p>
+<a id="more"></a>
+
+<h2 id="安装Shadowsocks-libev"><a href="#安装Shadowsocks-libev" class="headerlink" title="安装Shadowsocks-libev"></a><strong>安装Shadowsocks-libev</strong></h2><p>依赖很多，直接使用一键安装脚本。这里我选择安装在9365端口。</p>
+<pre><code class="bash">wget https://down.24kplus.com/linux/shadowsocks/centos-shadowsocks-libev.sh
+chmod +x centos-shadowsocks-libev.sh &amp;&amp; ./centos-shadowsocks-libev.sh</code></pre>
+<p>安装完毕后，运行</p>
+<pre><code class="bash">/usr/local/bin/ss-server -c /etc/shadowsocks-libev/config.json</code></pre>
+<p>如果报错，根据错误提示进行。比如我这里就是不支持fast open，去config.json中关闭fast_open就行。</p>
+<h2 id="安装simple-obfs"><a href="#安装simple-obfs" class="headerlink" title="安装simple-obfs"></a><strong>安装simple-obfs</strong></h2><p>用于伪装流量。</p>
+<pre><code class="bash">sudo yum install gcc autoconf libtool automake make zlib-devel openssl-devel asciidoc xmlto libev-devel
+git clone https://github.com/shadowsocks/simple-obfs.git
+cd simple-obfs
+git submodule update --init --recursive
+./autogen.sh
+./configure &amp;&amp; make
+sudo make install</code></pre>
+<p>启动：</p>
+<pre><code class="bash">obfs-server -s 0.0.0.0 -p 8888 --obfs http -r 127.0.0.1:9365</code></pre>
+<p>将obfs启动在8888端口，9365为ss-server的端口。</p>
+<h2 id="用Nginx做反向代理"><a href="#用Nginx做反向代理" class="headerlink" title="用Nginx做反向代理"></a><strong>用Nginx做反向代理</strong></h2><pre><code class="conf">server {
+    listen 80;
+    root /usr/share/nginx/html;
+
+    location / {
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade &quot;websocket&quot;;
+        proxy_set_header Connection &quot;upgrade&quot;;
+        if ($http_upgrade = &quot;websocket&quot;) {
+            proxy_pass http://127.0.0.1:8888;
+        }
+        root /root/webroot;
+        index index.html index.htm;
+        autoindex on;
+        charset utf-8;
+    }
+}</code></pre>
+<p>访问80端口时，如果是正常打开网站，则正常访问网站。如果是走的代理(经测试,obfs最新版支持websocket)，则走的8888端口(obfs)。</p>
+<p>代理(也在80端口)用的就是websocket那部分流量。</p>
+<p>写一点内容到index.html，可以放一点“真实”的内容。</p>
+<pre><code class="bash">echo &quot;I am index&quot; &gt; /root/webroot/index.html;</code></pre>
+<h2 id="客户端使用"><a href="#客户端使用" class="headerlink" title="客户端使用"></a>客户端使用</h2><p>端口填写80。</p>
+<p>客户端需要搭配 obfs 客户端插件使用。</p>
+<p>附：一键安装脚本</p>
+<pre><code class="bash">#!/usr/bin/env bash
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
+export PATH
+echo &quot;#&quot;
+echo &quot;# Auto install shadowsocks-libev server&quot;
+echo &quot;#&quot;
+echo &quot;# Copyright (C) 2019 24K PLUS&quot;
+echo &quot;#&quot;
+echo &quot;# System Required:  CentOS 7/8&quot;
+echo &quot;#&quot;
+echo &quot;# Welcome to https://www.24kplus.com&quot;
+echo &quot;#&quot;
+
+red=&#39;\033[0;31m&#39;
+green=&#39;\033[0;32m&#39;
+yellow=&#39;\033[0;33m&#39;
+plain=&#39;\033[0m&#39;
+
+[[ $EUID -ne 0 ]] &amp;&amp; echo -e &quot;[${red}Error${plain}] This script must be run as root!&quot; &amp;&amp; exit 1
+
+cur_dir=$( pwd )
+
+libtool_file=&quot;libtool-2.4.6&quot;
+libtool_url=&quot;https://down.24kplus.com/linux/libtool-2.4.6.tar.gz&quot;
+
+shadowsocks_libev_config=&quot;/etc/shadowsocks-libev/config.json&quot;
+shadowsocks_libev_service=&quot;/etc/systemd/system/shadowsocks-libev.service&quot;
+
+libsodium_file=&quot;libsodium-1.0.18-stable&quot;
+libsodium_url=&quot;https://down.24kplus.com/linux/libsodium-1.0.18-stable.tar.gz&quot;
+
+mbedtls_file=&quot;mbedtls-2.16.3&quot;
+mbedtls_url=&quot;https://down.24kplus.com/linux/mbedtls/mbedtls-2.16.3-gpl.tgz&quot;
+
+localconf_file=&quot;local&quot;
+localconf_url=&quot;https://down.24kplus.com/linux/shadowsocks/local.conf&quot;
+
+common_ciphers=(
+xchacha20-ietf-poly1305
+chacha20-ietf-poly1305
+chacha20
+aes-256-gcm
+aes-256-cfb
+)
+
+install_main(){
+    check_sys
+    install_prepare
+    install_dependencies
+    install_libtool
+    install_mbedtls
+    install_libsodium
+    check_bbr_status
+    if [ $? -eq 0 ]; then
+        check_kernel_version
+        if [ $? -eq 1 ]; then
+            enable_bbr
+        fi
+    fi
+    optimization_sys_config
+    install_shadowsocks_libev
+    install_completed_libev
+    config_firewall
+    install_cleanup
+}
+
+getversion(){
+    grep -oE &quot;[0-9.]+&quot; /etc/redhat-release
+}
+
+check_sys(){
+    if [ -f /etc/redhat-release ]; then
+        echo &quot;&quot;
+    else 
+        echo &quot;Only supported CentOS 7/8.&quot;
+        exit 1
+    fi
+    local version=&quot;$(getversion)&quot;
+    sys_main_ver=${version%%.*}
+    if [ &quot;$sys_main_ver&quot; != &#39;7&#39; ] &amp;&amp; [ &quot;$sys_main_ver&quot; != &#39;8&#39; ]; then
+        echo &quot;Only supports CentOS 7/8.&quot;
+        exit 1
+    fi
+}
+
+check_kernel_version(){
+    kernel_version=$(uname -r | awk -F&#39;.&#39; &#39;{print $1}&#39;)
+    kernel_main_version=$(uname -r | awk -F&#39;.&#39; &#39;{print $2}&#39;)
+    if [ $kernel_version -eq 4 ] &amp;&amp; [ $kernel_main_version -lt 9 ]; then
+        echo &quot;Google BBR only supports kernel version 4.9 or higher&quot;
+        return 0
+    elif [ $kernel_version -lt 4 ]; then
+        echo &quot;Google BBR only supports kernel version 4.9 or higher&quot;
+        return 0
+    fi
+    return 1
+}
+
+get_libev_ver(){
+    libev_ver=$(wget --no-check-certificate -qO- https://api.github.com/repos/shadowsocks/shadowsocks-libev/releases/latest | grep &#39;tag_name&#39; | cut -d\&quot; -f4)
+    [ -z ${libev_ver} ] &amp;&amp; echo -e &quot;[${red}Error${plain}] Get shadowsocks-libev latest version failed&quot; &amp;&amp; exit 1
+}
+
+download_shadowsocks_libev(){
+    cd ${cur_dir}
+
+    get_libev_ver
+    shadowsocks_libev_file=&quot;shadowsocks-libev-$(echo ${libev_ver} | sed -e &#39;s/^[a-zA-Z]//g&#39;)&quot;
+    local shadowsocks_libev_url=&quot;https://github.com/shadowsocks/shadowsocks-libev/releases/download/${libev_ver}/${shadowsocks_libev_file}.tar.gz&quot;
+
+    download &quot;${shadowsocks_libev_file}.tar.gz&quot; &quot;${shadowsocks_libev_url}&quot;
+}
+
+download(){
+    local filename=$(basename $1)
+    if [ -f ${1} ]; then
+        echo &quot;${filename} [found]&quot;
+    else
+        echo &quot;${filename} not found, download now...&quot;
+        wget --no-check-certificate -c -t3 -T60 -O ${1} ${2}
+        if [ $? -ne 0 ]; then
+            echo -e &quot;[${red}Error${plain}] Download ${filename} failed.&quot;
+            exit 1
+        fi
+    fi
+}
+install_libtool(){
+    if [ ! -f /usr/bin/libtool ] &amp;&amp; [ ! -f /usr/local/bin/libtool ]; then
+        cd ${cur_dir}
+        download &quot;${libtool_file}.tar.gz&quot; &quot;${libtool_url}&quot;
+        tar -zxf ${libtool_file}.tar.gz
+        cd ${libtool_file}
+        ./configure --prefix=/usr &amp;&amp; make &amp;&amp; make install &amp;&amp; ldconfig
+        if [ $? -ne 0 ]; then
+            echo -e &quot;[${red}Error${plain}] ${libtool_file} install failed.&quot;
+            install_cleanup
+            exit 1
+        fi
+    else
+        echo -e &quot;[${green}Info${plain}] libtool already installed.&quot;
+    fi
+}
+install_libsodium(){
+    if [ ! -f /usr/lib/libsodium.a ]; then
+        cd ${cur_dir}
+        download &quot;${libsodium_file}.tar.gz&quot; &quot;${libsodium_url}&quot;
+        tar -zxf ${libsodium_file}.tar.gz
+        cd libsodium-stable
+        ./configure --prefix=/usr &amp;&amp; make &amp;&amp; make install &amp;&amp; ldconfig
+        if [ $? -ne 0 ]; then
+            echo -e &quot;[${red}Error${plain}] ${libsodium_file} install failed.&quot;
+            install_cleanup
+            exit 1
+        fi
+    else
+        echo -e &quot;[${green}Info${plain}] libsodium already installed.&quot;
+    fi
+}
+
+install_mbedtls(){
+    if [ ! -f /usr/lib/libmbedtls.a ] &amp;&amp; [ ! -f /usr/bin/mbedtls_hello ] &amp;&amp; [ ! -f /usr/local/bin/mbedtls_hello ]; then
+        cd ${cur_dir}
+        download &quot;${mbedtls_file}-gpl.tgz&quot; &quot;${mbedtls_url}&quot;
+        tar -xf ${mbedtls_file}-gpl.tgz
+        cd ${mbedtls_file}
+        make &amp;&amp; make DESTDIR=/usr install &amp;&amp; ldconfig
+        if [ $? -ne 0 ]; then
+            echo -e &quot;[${red}Error${plain}] ${mbedtls_file} install failed.&quot;
+            install_cleanup
+            exit 1
+        fi
+    else
+        echo -e &quot;[${green}Info${plain}] mbedtls already installed.&quot;
+    fi
+}
+
+install_shadowsocks_libev(){
+    download_shadowsocks_libev
+    cd ${cur_dir}
+    tar -zxf ${shadowsocks_libev_file}.tar.gz
+    cd ${shadowsocks_libev_file}
+    ./configure --disable-documentation &amp;&amp; make &amp;&amp; make install
+    if [ $? -eq 0 ]; then
+        config_shadowsocks_libev
+        systemctl start shadowsocks-libev
+        systemctl enable shadowsocks-libev
+    else
+        echo
+        echo -e &quot;[${red}Error${plain}] shadowsocks-libev install failed.&quot;
+        install_cleanup
+        exit 1
+    fi
+}
+
+install_completed_libev(){
+    clear
+    echo
+    echo -e &quot;Congratulations, shadowsocks-libev server install completed!&quot;
+    echo -e &quot;Your Server IP        : ${red} $(get_ip) ${plain}&quot;
+    echo -e &quot;Your Server Port      : ${red} ${shadowsocksport} ${plain}&quot;
+    echo -e &quot;Your Password         : ${red} ${shadowsockspwd} ${plain}&quot;
+    echo -e &quot;Your Encryption Method: ${red} ${shadowsockscipher} ${plain}&quot;
+}
+
+install_cleanup(){
+    cd ${cur_dir}
+    rm -rf libsodium-stable ${libsodium_file}.tar.gz
+    rm -rf ${mbedtls_file} ${mbedtls_file}-gpl.tgz
+    rm -rf ${libtool_file} ${libtool_file}.tar.gz
+    rm -rf ${shadowsocks_libev_file} ${shadowsocks_libev_file}.tar.gz
+}
+
+check_kernel_headers(){
+    if rpm -qa | grep -q headers-$(uname -r); then
+        return 0
+    else
+        return 1
+    fi
+}
+
+
+config_shadowsocks_libev(){    
+    if [ ! -d &quot;$(dirname ${shadowsocks_libev_config})&quot; ]; then
+        mkdir -p $(dirname ${shadowsocks_libev_config})
+    fi
+
+    cat &gt; ${shadowsocks_libev_config}&lt;&lt;-EOF
+    {
+        &quot;server&quot;:[&quot;[::0]&quot;,&quot;0.0.0.0&quot;],
+        &quot;server_port&quot;:${shadowsocksport},
+        &quot;password&quot;:&quot;${shadowsockspwd}&quot;,
+        &quot;timeout&quot;:600,
+        &quot;method&quot;:&quot;${shadowsockscipher}&quot;,
+        &quot;fast_open&quot;:true,
+        &quot;mode&quot;:&quot;tcp_and_udp&quot;
+    }
+    EOF
+
+    cat &gt; ${shadowsocks_libev_service}&lt;&lt;-EOF
+    [Unit]
+    Description=shadowsocks-libev server
+    After=network.target
+
+    [Service]
+    Type=simple
+    ExecStartPre=/bin/sh -c &#39;ulimit -n 51200&#39;
+    ExecStart=/usr/local/bin/ss-server -c /etc/shadowsocks-libev/config.json
+    Restart=on-abort
+
+    [Install]
+    WantedBy=multi-user.target
+    EOF
+}
+
+
+error_detect_depends(){
+    local command=$1
+    local depend=`echo &quot;${command}&quot; | awk &#39;{print $4}&#39;`
+    echo -e &quot;[${green}Info${plain}] Starting to install package ${depend}&quot;
+    ${command} &gt; /dev/null 2&gt;&amp;1
+    if [ $? -ne 0 ]; then
+        echo -e &quot;[${red}Error${plain}] Failed to install ${red}${depend}${plain}&quot;
+        exit 1
+    fi
+}
+
+install_dependencies(){
+    local gcc_path=$(command -v gcc)
+    if [ &quot;${gcc_path}&quot; == &quot;&quot; ]; then
+        error_detect_depends &quot;yum -y install gcc&quot;
+    fi
+    yum_depends=(
+        gettext autoconf automake make pcre-devel asciidoc xmlto c-ares-devel libev-devel wget tar m4 perl
+    )
+    for depend in ${yum_depends[@]}; do
+        error_detect_depends &quot;yum -y install ${depend}&quot;
+    done
+
+    if [ &quot;$sys_main_ver&quot; == &#39;8&#39; ]; then
+        install_python2
+    fi
+}
+
+install_python2(){
+    if [ ! -f /usr/lib64/libpython2.7.so.1.0 ]; then
+        error_detect_depends &quot;yum -y install python2&quot;
+    fi
+}
+
+config_firewall(){
+    systemctl status firewalld &gt; /dev/null 2&gt;&amp;1
+    if [ $? -eq 0 ]; then
+        default_zone=$(firewall-cmd --get-default-zone)
+        firewall-cmd --permanent --zone=${default_zone} --add-port=${shadowsocksport}/tcp
+        firewall-cmd --permanent --zone=${default_zone} --add-port=${shadowsocksport}/udp
+        firewall-cmd --reload
+    else
+        echo -e &quot;[${yellow}Warning${plain}] firewalld looks like not running or not installed, please enable port ${shadowsocksport} manually if necessary.&quot;
+    fi
+}
+
+install_prepare_port() {
+    while true
+    do
+    dport=$(shuf -i 9000-19999 -n 1)
+    echo -e &quot;Please enter a port for shadowsocks-libev [1-65535]&quot;
+    read -p &quot;(Default port: ${dport}):&quot; shadowsocksport
+    [ -z &quot;${shadowsocksport}&quot; ] &amp;&amp; shadowsocksport=${dport}
+    expr ${shadowsocksport} + 1 &amp;&gt;/dev/null
+    if [ $? -eq 0 ]; then
+        if [ ${shadowsocksport} -ge 1 ] &amp;&amp; [ ${shadowsocksport} -le 65535 ] &amp;&amp; [ ${shadowsocksport:0:1} != 0 ]; then
+            echo
+            echo &quot;port = ${shadowsocksport}&quot;
+            echo
+            break
+        fi
+    fi
+    echo -e &quot;[${red}Error${plain}] Please enter a correct number [1-65535]&quot;
+    done
+}
+
+install_prepare_password(){
+    local mkpasswd_path=$(command -v mkpasswd)
+    if [ &quot;${mkpasswd_path}&quot; == &quot;&quot; ]; then
+        error_detect_depends &quot;yum -y install expect&quot;
+    fi
+    radompassword=$(mkpasswd -l 18 -d 2 -s 4)
+
+    echo &quot;Please enter password for shadowsocks-libev&quot;
+    read -p &quot;(Default password: ${radompassword}):&quot; shadowsockspwd
+    [ -z &quot;${shadowsockspwd}&quot; ] &amp;&amp; shadowsockspwd=${radompassword}
+    echo
+    echo &quot;password = ${shadowsockspwd}&quot;
+    echo
+}
+
+install_prepare_cipher(){
+    while true
+    do
+    echo -e &quot;Please select stream cipher for shadowsocks-libev:&quot;
+
+    for ((i=1;i&lt;=${#common_ciphers[@]};i++ )); do
+        hint=&quot;${common_ciphers[$i-1]}&quot;
+        echo -e &quot;${green}${i}${plain}) ${hint}&quot;
+    done
+    read -p &quot;Which cipher you&#39;d select(Default: ${common_ciphers[0]}):&quot; pick
+    [ -z &quot;$pick&quot; ] &amp;&amp; pick=1
+    expr ${pick} + 1 &amp;&gt;/dev/null
+    if [ $? -ne 0 ]; then
+        echo -e &quot;[${red}Error${plain}] Please enter a number&quot;
+        continue
+    fi
+    if [[ &quot;$pick&quot; -lt 1 || &quot;$pick&quot; -gt ${#common_ciphers[@]} ]]; then
+        echo -e &quot;[${red}Error${plain}] Please enter a number between 1 and ${#common_ciphers[@]}&quot;
+        continue
+    fi
+    shadowsockscipher=${common_ciphers[$pick-1]}
+
+
+
+    echo
+    echo &quot;cipher = ${shadowsockscipher}&quot;
+    echo
+    break
+    done
+}
+
+check_bbr_status() {
+    local param=$(lsmod | grep bbr | awk &#39;{print $1}&#39;)
+    if [[ &quot;${param}&quot; == &quot;tcp_bbr&quot; ]]; then
+        echo &quot;[${green}Info${plain}] Your Google BBR enabled&quot;
+        return 1
+    else
+        return 0
+    fi
+}
+
+enable_bbr() {
+    modprobe tcp_bbr
+    echo &quot;tcp_bbr&quot; &gt;&gt; /etc/modules-load.d/modules.conf
+    echo &quot;net.core.default_qdisc = fq&quot; &gt;&gt; /etc/sysctl.conf
+    echo &quot;net.ipv4.tcp_congestion_control = bbr&quot; &gt;&gt; /etc/sysctl.conf
+    sysctl -p
+    echo &quot;[${green}Info${plain}] Google BBR enabled&quot;
+}
+
+optimization_sys_config(){
+    cd ${cur_dir}
+    if [ ! -f /etc/sysctl.d/local.conf ]; then
+        download &quot;${localconf_file}.conf&quot; &quot;${localconf_url}&quot;
+        mv ${localconf_file}.conf /etc/sysctl.d/local.conf
+        sysctl --system    
+    fi
+    if [ &quot;$(grep &quot;* soft nofile&quot; /etc/security/limits.conf)&quot; == &quot;&quot; ]; then
+        echo &quot;* soft nofile 51200&quot; &gt;&gt; /etc/security/limits.conf
+    fi
+    if [ &quot;$(grep &quot;* hard nofile&quot; /etc/security/limits.conf)&quot; == &quot;&quot; ]; then
+        echo &quot;* hard nofile 51200&quot; &gt;&gt; /etc/security/limits.conf
+    fi
+}
+
+get_ip(){
+    local IP=$( ip addr | egrep -o &#39;[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}&#39; | egrep -v &quot;^192\.168|^172\.1[6-9]\.|^172\.2[0-9]\.|^172\.3[0-2]\.|^10\.|^127\.|^255\.|^0\.&quot; | head -n 1 )
+    [ -z ${IP} ] &amp;&amp; IP=$( wget -qO- -t1 -T2 api.24kplus.com/myip )
+    echo ${IP}
+}
+
+get_char(){
+    SAVEDSTTY=$(stty -g)
+    stty -echo
+    stty cbreak
+    dd if=/dev/tty bs=1 count=1 2&gt; /dev/null
+    stty -raw
+    stty echo
+    stty $SAVEDSTTY
+}
+
+install_prepare(){
+
+    install_prepare_password
+    install_prepare_port
+    install_prepare_cipher
+
+    echo
+    echo &quot;Press any key to start...or Press Ctrl+C to cancel&quot;
+    char=`get_char`
+
+}
+
+install_main</code></pre>
+
+            </div>
+          
+
+    
+      <footer class="post-footer">
+		
+
+        
+        
+  <nav class="post-nav">
+    
+      <a class="prev" href="/2020/03/29/hacker-and-painter/">
+        <i class="iconfont icon-left"></i>
+        <span class="prev-text nav-default">读后感</span>
+        <span class="prev-text nav-mobile">上一篇</span>
+      </a>
+    
+    
+      <a class="next" href="/2020/02/08/new-start/">
+        <span class="next-text nav-default">博客复活</span>
+        <span class="prev-text nav-mobile">下一篇</span>
+        <i class="iconfont icon-right"></i>
+      </a>
+    
+  </nav>
+
+        
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+      </footer>
+    
+  </article>
+
+    </div>
+
+      </div>
+
+      <footer id="colophon"><span class="copyright-year">
+    
+        &copy;
+    
+        2014 -
+    
+    2020
+    <span class="footer-author">ranjiayu.</span>
+    <span class="power-by">
+        由 <a class="hexo-link" href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> and <a class="theme-link" href="https://github.com/frostfan/hexo-theme-polarbear" target="_blank" rel="noopener">Polar Bear</a> 强力驱动
+    </span>
+</span>
+
+      </footer>
+
+      <div class="back-to-top" id="back-to-top">
+        <i class="iconfont icon-up"></i>
+      </div>
+    </div>
+    
+
+
+    
+
+
+
+
+  
+    <script type="text/javascript" src="/lib/jquery/jquery-3.1.1.min.js"></script>
+  
+
+  
+
+    <script type="text/javascript" src="/js/src/theme.js?v=1.1"></script>
+<script type="text/javascript" src="/js/src/bootstrap.js?v=1.1"></script>
+
+  </body>
+</html>

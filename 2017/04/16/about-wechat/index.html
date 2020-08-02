@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+  <head>
+    
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,minimum-scale=1,maximum-scale=1">
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+  <meta name="description" content="记录有关微信支付的坑"/>
+
+
+
+
+
+
+
+
+  <link rel="alternate" href="/default" title="Ran">
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=1.1" />
+
+
+
+<link rel="canonical" href="http://yoursite.com/2017/04/16/about-wechat/"/>
+
+
+<meta name="description" content="本文时间为2017年04月16日，如果微信支付官方文档有变化请注意。 h5页面用JS调起支付。 文档里面的参数一定要分清楚大小写！有些地方是大写，有些小写，有些又是下划线。真的巨坑">
+<meta property="og:type" content="article">
+<meta property="og:title" content="记录有关微信支付的坑">
+<meta property="og:url" content="http://yoursite.com/2017/04/16/about-wechat/index.html">
+<meta property="og:site_name" content="Ran">
+<meta property="og:description" content="本文时间为2017年04月16日，如果微信支付官方文档有变化请注意。 h5页面用JS调起支付。 文档里面的参数一定要分清楚大小写！有些地方是大写，有些小写，有些又是下划线。真的巨坑">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2017-04-16T11:41:00.000Z">
+<meta property="article:modified_time" content="2020-07-01T13:31:55.507Z">
+<meta property="article:author" content="ranjiayu">
+<meta property="article:tag" content="ranjiayu">
+<meta property="article:tag" content="blog">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="stylesheet" type="text/css" href="/css/style.css?v=1.1" />
+<link href='https://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet'>
+
+
+
+
+
+<script type="text/javascript">
+  var themeConfig = {
+    fancybox: {
+      enable: false
+    },
+  };
+</script>
+
+
+
+
+  
+
+
+
+    <title> 记录有关微信支付的坑 - Ran </title>
+  <meta name="generator" content="Hexo 4.2.1"></head>
+
+  <body>
+    <div id="page">
+      <header id="masthead"><div class="site-header-inner">
+    <h1 class="site-title">
+        <a href="/." class="logo">Ran</a>
+    </h1>
+
+    <nav id="nav-top">
+        
+            <ul id="menu-top" class="nav-top-items">
+                
+                    <li class="menu-item">
+                        <a href="/archives">
+                            
+                            
+                                Archives
+                            
+                        </a>
+                    </li>
+                
+                    <li class="menu-item">
+                        <a href="/about">
+                            
+                            
+                                About
+                            
+                        </a>
+                    </li>
+                
+            </ul>
+        
+  </nav>
+</div>
+
+      </header>
+      <div id="content">
+        
+    <div id="primary">
+        
+  <article class="post">
+    <header class="post-header">
+      <h1 class="post-title">
+        
+          记录有关微信支付的坑
+        
+      </h1>
+
+      <time class="post-time">
+          4月 16 2017
+      </time>
+    </header>
+
+
+
+    
+            <div class="post-content">
+            <p>本文时间为2017年04月16日，如果微信支付官方文档有变化请注意。</p>
+<p>h5页面用JS调起支付。</p>
+<p>文档里面的参数一定要分清楚大小写！有些地方是大写，有些小写，有些又是下划线。真的巨坑</p>
+<a id="more"></a>
+
+<p>noncestr nonce_str nonceStr</p>
+<p>timestamp timeStamp</p>
+<p>##1.微信JS SDK</p>
+<p><a href="https://mp.weixin.qq.com/wiki/7/aaa137b55fb2e0456bf8dd9148dd613f.html" target="_blank" rel="noopener">文档地址</a></p>
+<p>有一个坑，因为我是在微信服务号中调用的，有一步需要获取用户的openid，导致最后的url变化为/?code=xxxx&amp;state=xxx。</p>
+<p>函数说明：</p>
+<p>create_noncestr 生成16位随机字符串</p>
+<p>create_timestamp 生成10位时间戳</p>
+<p>get_jsapi_ticket 根据 access_token 获取jsapi_ticket</p>
+<p>js_url 为<strong>当前</strong>的url！即调用该JS页面的<strong>完整url</strong></p>
+<pre><code class="python">noncestr = create_noncestr()
+timestamp = create_timestamp()
+jsapi = get_jsapi_ticket()
+js_url = JSAPI_URL + &#39;?code={code}&amp;state={state}&#39;.format(code=code, state=state)
+</code></pre>
+<p>开启debug:true，如果提示 “errMsg”:”config ok” 则表示JSSDK初始化成功。(成功提示居然是errMsg。。)</p>
+<p>##2.统一下单</p>
+<p><a href="https://pay.weixin.qq.com/wiki/doc/api/jsapi.php?chapter=9_1" target="_blank" rel="noopener">文档地址</a></p>
+<p>坑一：按照文档的步骤走，但是有一点需要注意，文档里面没有<strong>timeStamp</strong>这一项，需要自己加！</p>
+<p>坑二：spbill_create_ip </p>
+<p>这个参数表示客服端ip，由于我是用Django进行开发，Nginx反向代理，所以这里如果用 request.META[‘REMOTE_ADDR’] 为127.0.0.1</p>
+<p>应该使用 request.META[‘HTTP_X_FORWARDED_FOR’].split(‘,’)[0]</p>
+<p>坑三：openid 为必填(JS SDK支付为必填)</p>
+<p>坑四：openssl 给微信服务器发送xml数据的地址是https，Linux下需要安装一些东西。</p>
+<pre><code>
+sudo apt-get install openssl
+
+sudo apt-get install libssl-dev
+</code></pre><p>拿到 perpay_id 后，里面同时有个sign，注意<em>这个sign不是前端所需要的paySign</em>。</p>
+<p>这句话在JS SDK文档里面：</p>
+<pre><code>paySign 采用统一的微信支付 Sign 签名生成方法，注意这里 appId 也要参与签名，appId 与 config 中传入的 appId 一致，即最后参与签名的参数有appId, timeStamp, nonceStr, package, signType。</code></pre><p>用同样的签名方式</p>
+<pre><code class="python">
+# 拿到prepay_id后继续获取前端所需要的 paySign
+
+d1 = {
+    &#39;appId&#39;: APP_ID,
+    &#39;timeStamp&#39;: 2步骤发送的timestamp,
+    &#39;nonceStr&#39;: 2步骤返回的nonce_str,
+    &#39;package&#39;: &#39;prepay_id=&#39;+ 2步骤返回的perpay_id,
+    &#39;signType&#39;: &#39;MD5&#39;,
+}
+s_d1 = &#39;&amp;&#39;.join([&#39;%s=%s&#39; % (key, d1[key]) for key in sorted(d1)])
+# 这里注意必须在最后加上 &amp;key=商户key(在微信支付商户设置里面设置的32位随机字符串)
+s_d1 += &#39;&amp;key={key}&#39;.format(key=API_KEY)
+paySign = hashlib.md5(s_d1.encode(&#39;utf-8&#39;)).hexdigest().upper()</code></pre>
+<p>##3.前端调用</p>
+<p>真的无语，微信官方有两套方法。微信支付有一套，JSSDK里面又有一种。最后用的微信支付文档里面的方法</p>
+<p><a href="https://pay.weixin.qq.com/wiki/doc/api/jsapi.php?chapter=7_7&index=6" target="_blank" rel="noopener">文档地址</a></p>
+<pre><code class="javascript">
+function onBridgeReady () {
+    WeixinJSBridge.invoke(
+        &#39;getBrandWCPayRequest&#39;, {
+            &quot;appId&quot;:&quot;wx2421b1c4370ec43b&quot;,     //公众号名称，由商户传入     
+            &quot;timeStamp&quot;:&quot;1395712654&quot;,         //时间戳，自1970年以来的秒数     
+            &quot;nonceStr&quot;:&quot;e61463f8efa94090b1f366cccfbbb444&quot;, //随机串     
+            &quot;package&quot;:&quot;prepay_id=u802345jgfjsdfgsdg888&quot;,     
+            &quot;signType&quot;:&quot;MD5&quot;,         //微信签名方式：     
+            &quot;paySign&quot;:&quot;70EA570631E4BB79628FBCA90534C63FF7FADD89&quot; //微信签名 
+        },
+        function (res) {     
+            if(res.err_msg == &quot;get_brand_wcpay_request:ok&quot; ) {}     // 使用以上方式判断前端返回,微信团队郑重提示：res.err_msg将在用户支付成功后返回    ok，但并不保证它绝对可靠。 
+        }
+    ); 
+}
+
+if (typeof WeixinJSBridge == &quot;undefined&quot;) {
+    if (document.addEventListener) {
+            document.addEventListener(&#39;WeixinJSBridgeReady&#39;, onBridgeReady, false);
+        } else if (document.attachEvent) {
+            document.attachEvent(&#39;WeixinJSBridgeReady&#39;, onBridgeReady); 
+            document.attachEvent(&#39;onWeixinJSBridgeReady&#39;, onBridgeReady);
+        }
+    } else {
+        onBridgeReady();
+    }
+</code></pre>
+<p>##4.notify地址返回success或者fail</p>
+<p>2017年05月26日补充：这里和之前一样，拿到request.body xml解析后操作，返回也是xml格式。</p>
+<p>付款成功后的操作就在这里进行。</p>
+<p>##5.需要用到的key/id</p>
+<p>1.公众账号ID APPID</p>
+<p>2.商户号 mch_id</p>
+<p>3.商户key (商户平台后台设置的32位随机字符串)</p>
+
+            </div>
+          
+
+    
+      <footer class="post-footer">
+		
+
+        
+        
+  <nav class="post-nav">
+    
+      <a class="prev" href="/2017/12/31/turbolinks/">
+        <i class="iconfont icon-left"></i>
+        <span class="prev-text nav-default">Turbolinks引发的问题</span>
+        <span class="prev-text nav-mobile">上一篇</span>
+      </a>
+    
+    
+  </nav>
+
+        
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+      </footer>
+    
+  </article>
+
+    </div>
+
+      </div>
+
+      <footer id="colophon"><span class="copyright-year">
+    
+        &copy;
+    
+        2014 -
+    
+    2020
+    <span class="footer-author">ranjiayu.</span>
+    <span class="power-by">
+        由 <a class="hexo-link" href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> and <a class="theme-link" href="https://github.com/frostfan/hexo-theme-polarbear" target="_blank" rel="noopener">Polar Bear</a> 强力驱动
+    </span>
+</span>
+
+      </footer>
+
+      <div class="back-to-top" id="back-to-top">
+        <i class="iconfont icon-up"></i>
+      </div>
+    </div>
+    
+
+
+    
+
+
+
+
+  
+    <script type="text/javascript" src="/lib/jquery/jquery-3.1.1.min.js"></script>
+  
+
+  
+
+    <script type="text/javascript" src="/js/src/theme.js?v=1.1"></script>
+<script type="text/javascript" src="/js/src/bootstrap.js?v=1.1"></script>
+
+  </body>
+</html>

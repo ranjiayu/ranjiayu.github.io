@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+  <head>
+    
+<meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,minimum-scale=1,maximum-scale=1">
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+  <meta name="description" content="JS设计模式读书笔记"/>
+
+
+
+
+
+
+
+
+  <link rel="alternate" href="/default" title="Ran">
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=1.1" />
+
+
+
+<link rel="canonical" href="http://yoursite.com/2018/11/13/js-design-pattern/"/>
+
+
+<meta name="description" content="其中有些设计模式可能在实际中没用用到过，有些用到了可能自己也不知道。O(∩_∩)O">
+<meta property="og:type" content="article">
+<meta property="og:title" content="JS设计模式读书笔记">
+<meta property="og:url" content="http://yoursite.com/2018/11/13/js-design-pattern/index.html">
+<meta property="og:site_name" content="Ran">
+<meta property="og:description" content="其中有些设计模式可能在实际中没用用到过，有些用到了可能自己也不知道。O(∩_∩)O">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-11-13T11:43:00.000Z">
+<meta property="article:modified_time" content="2020-07-01T13:31:55.508Z">
+<meta property="article:author" content="ranjiayu">
+<meta property="article:tag" content="ranjiayu">
+<meta property="article:tag" content="blog">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="stylesheet" type="text/css" href="/css/style.css?v=1.1" />
+<link href='https://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet'>
+
+
+
+
+
+<script type="text/javascript">
+  var themeConfig = {
+    fancybox: {
+      enable: false
+    },
+  };
+</script>
+
+
+
+
+  
+
+
+
+    <title> JS设计模式读书笔记 - Ran </title>
+  <meta name="generator" content="Hexo 4.2.1"></head>
+
+  <body>
+    <div id="page">
+      <header id="masthead"><div class="site-header-inner">
+    <h1 class="site-title">
+        <a href="/." class="logo">Ran</a>
+    </h1>
+
+    <nav id="nav-top">
+        
+            <ul id="menu-top" class="nav-top-items">
+                
+                    <li class="menu-item">
+                        <a href="/archives">
+                            
+                            
+                                Archives
+                            
+                        </a>
+                    </li>
+                
+                    <li class="menu-item">
+                        <a href="/about">
+                            
+                            
+                                About
+                            
+                        </a>
+                    </li>
+                
+            </ul>
+        
+  </nav>
+</div>
+
+      </header>
+      <div id="content">
+        
+    <div id="primary">
+        
+  <article class="post">
+    <header class="post-header">
+      <h1 class="post-title">
+        
+          JS设计模式读书笔记
+        
+      </h1>
+
+      <time class="post-time">
+          11月 13 2018
+      </time>
+    </header>
+
+
+
+    
+            <div class="post-content">
+            <p>其中有些设计模式可能在实际中没用用到过，有些用到了可能自己也不知道。O(∩_∩)O</p>
+<a id="more"></a>
+
+
+<h2 id="单例模式"><a href="#单例模式" class="headerlink" title="单例模式"></a>单例模式</h2><pre><code>一个类仅有一个实例。</code></pre><pre><code class="javascript">var S = function () {
+    this._instance = null;
+};
+
+S.prototype.getInstance = function () {
+    if (!this._instance) return new S();
+    return this._instance;
+};
+</code></pre>
+<p>场景：一个登录框、一个数据库连接实例</p>
+<h2 id="策略模式"><a href="#策略模式" class="headerlink" title="策略模式"></a>策略模式</h2><pre><code>定义一系列的算法，把它们一个个封装起来，并且使它们可以相互替换。</code></pre><pre><code class="javascript">var S = function( salary ){
+  return salary * 4;
+};
+
+var A = function( salary ){
+  return salary * 3;
+};
+
+var B = function( salary ){
+  return salary * 2;
+};
+
+var calculateBonus = function( func, salary ){
+  return func( salary );
+};
+
+calculateBonus( S, 10000 ); // 输出：40000
+</code></pre>
+<p>场景：实现不同的动画（如仅仅因为动画计算方法不同）、表单提交验证（有很多条验证的规则）。</p>
+<p>简单地说就是把【算法】部分提取出来。</p>
+<h2 id="代理模式"><a href="#代理模式" class="headerlink" title="代理模式"></a>代理模式</h2><pre><code>为其他对象提供一种代理以控制对这个对象的访问。</code></pre><p>分为两种代理：1.保护代理；对被代理的对象进行一些过滤等操作。2.虚拟代理。虚拟代理把一些开销很大的对象，延迟到真正需要它的时候才去创建。</p>
+<p>形象的描述一下，书上的例子：</p>
+<pre><code>A在追求C，请求C的好朋友B去送东西。
+
+保护代理：B如果在收到A的东西里面发现只有鲜花一类没用的东西，就不送给C了。如果B发现A送的是宝马车，那么就把东西转交给C。
+
+虚拟代理：B在收到A的东西后，不着急转交给C。在C的心情好的时候交给他，这样A追求成功的机率会大一些。</code></pre><p>体现了单一职责原则；当然可以把B的功能写在A里面，但是这样在修改的时候可能会感到困难。</p>
+<p>场景：请求代理、图片懒加载</p>
+<pre><code class="javascript">
+// 请求代理，在不同环境下请求不同的host。保护代理
+
+var proxyRequest = function(url){
+  if (environment === &#39;development&#39;){
+    url = &#39;http://localhost&#39; + url;
+  }
+  if (environment === &#39;production&#39;){
+    url = &#39;http://www.xxx.com&#39; + url;
+  }
+  return fetch(url);
+}
+proxyRequest(&#39;/api/&#39;)
+
+
+
+// 图片懒加载。虚拟代理
+var myImage = (function(){
+var imgNode = document.createElement( &#39;img&#39; );
+document.body.appendChild( imgNode );
+  return {
+    setSrc: function (src) {
+      imgNode.src = src;
+    }
+  }
+})();
+
+
+
+var proxyImage = (function(){
+  var img = new Image;
+    img.onload = function(){
+      myImage.setSrc( this.src );
+    }
+    return {
+      setSrc: function( src ){
+      myImage.setSrc( &#39;url-loading&#39; );
+      img.src = src;
+    }
+  }
+})();
+
+proxyImage.setSrc( &#39;url&#39; );
+</code></pre>
+<h2 id="发布-订阅模式"><a href="#发布-订阅模式" class="headerlink" title="发布-订阅模式"></a>发布-订阅模式</h2><p>  发布-订阅模式又叫观察者模式，它定义对象间的一种一对多的依赖关系，当一个对象的状态发生改变时，所有依赖于它的对象都将得到通知。</p>
+<p>在JS中非常常见：Ajax回调、事件监听…</p>
+<h2 id="组合模式"><a href="#组合模式" class="headerlink" title="组合模式"></a>组合模式</h2><p>  组合模式将对象组合成树形结构，以表示“部分-整体”的层次结构。</p>
+<p>实例：文件扫描器</p>
+<pre><code class="javascript">
+/******************************* Folder ******************************/
+var Folder = function( name ){
+  this.name = name;
+  this.files = [];
+};
+
+Folder.prototype.add = function( file ){
+  this.files.push( file );
+};
+
+Folder.prototype.scan = function(){
+  console.log( &#39;开始扫描文件夹: &#39; + this.name );
+  for ( var i = 0, file, files = this.files; file = files[ i++ ]; ){
+    file.scan();
+  }
+};
+
+/******************************* File ******************************/
+
+var File = function( name ){
+  this.name = name;
+};
+
+File.prototype.add = function(){
+  throw new Error( &#39;文件下面不能再添加文件&#39; );
+};
+
+File.prototype.scan = function(){
+  console.log( &#39;开始扫描文件: &#39; + this.name );
+};
+
+var folder = new Folder( &#39;学习资料&#39; );
+var folder1 = new Folder( &#39;JavaScript&#39; );
+var folder2 = new Folder ( &#39;jQuery&#39; );
+var file1 = new File( &#39;JavaScript 设计模式与开发实践&#39; );
+var file2 = new File( &#39;精通 jQuery&#39; );
+var file3 = new File( &#39;重构与模式&#39; )
+folder1.add( file1 );
+folder2.add( file2 );
+folder.add( folder1 );
+folder.add( folder2 );
+folder.add( file3 );
+folder.sacn()
+</code></pre>
+<h2 id="享元模式"><a href="#享元模式" class="headerlink" title="享元模式"></a>享元模式</h2><p>  享元模式的核心是运用共享技术来有效支持大量细粒度的对象。</p>
+<p>享元模式要求将对象的属性划分为内部状态与外部状态（状态在这里通常指属性）。</p>
+<ul>
+<li><p>内部状态储存于对象内部。</p>
+</li>
+<li><p>内部状态可以被一些对象共享。</p>
+</li>
+<li><p>内部状态独立于具体的场景，通常不会改变。</p>
+</li>
+<li><p>外部状态取决于具体的场景，并根据场景而变化，外部状态不能被共享。</p>
+</li>
+</ul>
+<p>通俗讲就是把需要大量的实例的共同点（内部状态）提取出来，只实例化一个，其他属性（外部状态）由管理器去操作、管理。</p>
+<p>书中的例子是有一个上传2000个文件的操作，有些是通过Flash上传，有些通过表单上传。new了2000个Upload实例。但是他们唯一不同的是其中uploadType不同，所以可以只new 2个Upload实例就行了，分别代表用Flash上传和表单上传，其他属性，也可以说是外部状态（文件名、文件大小等）由外部的管理器去修改、操作。</p>
+<h2 id="适配器模式"><a href="#适配器模式" class="headerlink" title="适配器模式"></a>适配器模式</h2><p>  适配器模式的作用是解决两个软件实体间的接口不兼容的问题。使用适配器模式之后，原本由于接口不兼容而不能工作的两个软件实体可以一起工作。</p>
+<p>常见的场景如一些ORM框架，只需要填写简单的配置，在不同的环境下使用不同的数据库。Session的配置，模板引擎的配置等。</p>
+<p>在<a href="https://thinkjs.org/zh-cn/doc/3.0/adapter.html" target="_blank" rel="noopener">ThinkJS框架的Adapter文档</a>中有写到</p>
+<p>前端方面我觉得pollyfill应该也算是适配器模式吧。</p>
+<pre><code class="javascript">
+function AnimationAdapter(){
+  if (!window.requestAnimationFrame){
+    return function(fn){
+      return setTimeout(fn, 17);
+    }
+  }
+  return window.requestAnimationFrame;
+}
+
+let fn = AnimationAdapter()
+</code></pre>
+<h2 id="装饰器模式"><a href="#装饰器模式" class="headerlink" title="装饰器模式"></a>装饰器模式</h2><p>  装饰者模式能够在不改变对象自身的基础上，在程序运行期间给对象动态地添加职责。</p>
+<p>装饰器在Python、ES6中都有，其本质就是一个函数。只是通过一个语法糖简化了传递函数的过程。可以将装饰器就看作一个函数A，参入的参数是函数B，对传入的函数B进行修改后返回一个新的函数C。</p>
+<p>但是在JS中装饰器不能用于一个函数。</p>
+<pre><code class="javascript">
+@decorator
+class A {}
+// 等同于
+class A {}
+A = decorator(A) || A;</code></pre>
+<p>和适配器模式的区别：装饰器模式一般给函数、对象增加功能，可能增加很多个功能。而适配器通常只包装一次。</p>
+<p>一般用于AOP</p>
+<h2 id="中介者模式"><a href="#中介者模式" class="headerlink" title="中介者模式"></a>中介者模式</h2><p>  中介者模式的作用就是解除对象与对象之间的紧耦合关系。增加一个中介者对象后，所有的相关对象都通过中介者对象来通信，而不是互相引用，所以当一个对象发生改变时，只需要通知中介者对象即可。</p>
+<p>最少知识原则，减少对象之间的联系。</p>
+
+            </div>
+          
+
+    
+      <footer class="post-footer">
+		
+
+        
+        
+  <nav class="post-nav">
+    
+      <a class="prev" href="/2019/01/03/docker-rails/">
+        <i class="iconfont icon-left"></i>
+        <span class="prev-text nav-default">用Docker部署项目</span>
+        <span class="prev-text nav-mobile">上一篇</span>
+      </a>
+    
+    
+      <a class="next" href="/2018/10/20/cookie-session-jwt/">
+        <span class="next-text nav-default">Cookie？Session？JWT？</span>
+        <span class="prev-text nav-mobile">下一篇</span>
+        <i class="iconfont icon-right"></i>
+      </a>
+    
+  </nav>
+
+        
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+      </footer>
+    
+  </article>
+
+    </div>
+
+      </div>
+
+      <footer id="colophon"><span class="copyright-year">
+    
+        &copy;
+    
+        2014 -
+    
+    2020
+    <span class="footer-author">ranjiayu.</span>
+    <span class="power-by">
+        由 <a class="hexo-link" href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> and <a class="theme-link" href="https://github.com/frostfan/hexo-theme-polarbear" target="_blank" rel="noopener">Polar Bear</a> 强力驱动
+    </span>
+</span>
+
+      </footer>
+
+      <div class="back-to-top" id="back-to-top">
+        <i class="iconfont icon-up"></i>
+      </div>
+    </div>
+    
+
+
+    
+
+
+
+
+  
+    <script type="text/javascript" src="/lib/jquery/jquery-3.1.1.min.js"></script>
+  
+
+  
+
+    <script type="text/javascript" src="/js/src/theme.js?v=1.1"></script>
+<script type="text/javascript" src="/js/src/bootstrap.js?v=1.1"></script>
+
+  </body>
+</html>
