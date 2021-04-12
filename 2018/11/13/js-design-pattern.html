@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>JS设计模式读书笔记 | Ran</title>
+<meta name="generator" content="Jekyll v4.2.0" />
+<meta property="og:title" content="JS设计模式读书笔记" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="其中有些设计模式可能在实际中没用用到过，有些用到了可能自己也不知道。O(∩_∩)O" />
+<meta property="og:description" content="其中有些设计模式可能在实际中没用用到过，有些用到了可能自己也不知道。O(∩_∩)O" />
+<link rel="canonical" href="https://ranjiayu.github.io/2018/11/13/js-design-pattern.html" />
+<meta property="og:url" content="https://ranjiayu.github.io/2018/11/13/js-design-pattern.html" />
+<meta property="og:site_name" content="Ran" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2018-11-13T19:43:00+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="JS设计模式读书笔记" />
+<script type="application/ld+json">
+{"mainEntityOfPage":{"@type":"WebPage","@id":"https://ranjiayu.github.io/2018/11/13/js-design-pattern.html"},"url":"https://ranjiayu.github.io/2018/11/13/js-design-pattern.html","description":"其中有些设计模式可能在实际中没用用到过，有些用到了可能自己也不知道。O(∩_∩)O","dateModified":"2018-11-13T19:43:00+08:00","datePublished":"2018-11-13T19:43:00+08:00","headline":"JS设计模式读书笔记","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://ranjiayu.github.io/feed.xml" title="Ran" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Ran</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">JS设计模式读书笔记</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2018-11-13T19:43:00+08:00" itemprop="datePublished">Nov 13, 2018
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>其中有些设计模式可能在实际中没用用到过，有些用到了可能自己也不知道。O(∩_∩)O</p>
+
+<!-- more -->
+
+<h2 id="单例模式">单例模式</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>一个类仅有一个实例。
+</code></pre></div></div>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">var</span> <span class="nx">S</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">_instance</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">S</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">getInstance</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="k">this</span><span class="p">.</span><span class="nx">_instance</span><span class="p">)</span> <span class="k">return</span> <span class="k">new</span> <span class="nx">S</span><span class="p">();</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_instance</span><span class="p">;</span>
+<span class="p">};</span>
+
+</code></pre></div></div>
+
+<p>场景：一个登录框、一个数据库连接实例</p>
+
+<h2 id="策略模式">策略模式</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>定义一系列的算法，把它们一个个封装起来，并且使它们可以相互替换。
+</code></pre></div></div>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">var</span> <span class="nx">S</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span> <span class="nx">salary</span> <span class="p">){</span>
+  <span class="k">return</span> <span class="nx">salary</span> <span class="o">*</span> <span class="mi">4</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="kd">var</span> <span class="nx">A</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span> <span class="nx">salary</span> <span class="p">){</span>
+  <span class="k">return</span> <span class="nx">salary</span> <span class="o">*</span> <span class="mi">3</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="kd">var</span> <span class="nx">B</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span> <span class="nx">salary</span> <span class="p">){</span>
+  <span class="k">return</span> <span class="nx">salary</span> <span class="o">*</span> <span class="mi">2</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="kd">var</span> <span class="nx">calculateBonus</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span> <span class="nx">func</span><span class="p">,</span> <span class="nx">salary</span> <span class="p">){</span>
+  <span class="k">return</span> <span class="nx">func</span><span class="p">(</span> <span class="nx">salary</span> <span class="p">);</span>
+<span class="p">};</span>
+
+<span class="nx">calculateBonus</span><span class="p">(</span> <span class="nx">S</span><span class="p">,</span> <span class="mi">10000</span> <span class="p">);</span> <span class="c1">// 输出：40000</span>
+
+</code></pre></div></div>
+
+<p>场景：实现不同的动画（如仅仅因为动画计算方法不同）、表单提交验证（有很多条验证的规则）。</p>
+
+<p>简单地说就是把【算法】部分提取出来。</p>
+
+<h2 id="代理模式">代理模式</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>为其他对象提供一种代理以控制对这个对象的访问。
+</code></pre></div></div>
+
+<p>分为两种代理：1.保护代理；对被代理的对象进行一些过滤等操作。2.虚拟代理。虚拟代理把一些开销很大的对象，延迟到真正需要它的时候才去创建。</p>
+
+<p>形象的描述一下，书上的例子：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>A在追求C，请求C的好朋友B去送东西。
+
+保护代理：B如果在收到A的东西里面发现只有鲜花一类没用的东西，就不送给C了。如果B发现A送的是宝马车，那么就把东西转交给C。
+
+虚拟代理：B在收到A的东西后，不着急转交给C。在C的心情好的时候交给他，这样A追求成功的机率会大一些。
+</code></pre></div></div>
+
+<p>体现了单一职责原则；当然可以把B的功能写在A里面，但是这样在修改的时候可能会感到困难。</p>
+
+<p>场景：请求代理、图片懒加载</p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="c1">// 请求代理，在不同环境下请求不同的host。保护代理</span>
+
+<span class="kd">var</span> <span class="nx">proxyRequest</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">url</span><span class="p">){</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">environment</span> <span class="o">===</span> <span class="dl">'</span><span class="s1">development</span><span class="dl">'</span><span class="p">){</span>
+    <span class="nx">url</span> <span class="o">=</span> <span class="dl">'</span><span class="s1">http://localhost</span><span class="dl">'</span> <span class="o">+</span> <span class="nx">url</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">environment</span> <span class="o">===</span> <span class="dl">'</span><span class="s1">production</span><span class="dl">'</span><span class="p">){</span>
+    <span class="nx">url</span> <span class="o">=</span> <span class="dl">'</span><span class="s1">http://www.xxx.com</span><span class="dl">'</span> <span class="o">+</span> <span class="nx">url</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nx">fetch</span><span class="p">(</span><span class="nx">url</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="nx">proxyRequest</span><span class="p">(</span><span class="dl">'</span><span class="s1">/api/</span><span class="dl">'</span><span class="p">)</span>
+
+
+
+<span class="c1">// 图片懒加载。虚拟代理</span>
+<span class="kd">var</span> <span class="nx">myImage</span> <span class="o">=</span> <span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+<span class="kd">var</span> <span class="nx">imgNode</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span> <span class="dl">'</span><span class="s1">img</span><span class="dl">'</span> <span class="p">);</span>
+<span class="nb">document</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span> <span class="nx">imgNode</span> <span class="p">);</span>
+  <span class="k">return</span> <span class="p">{</span>
+    <span class="na">setSrc</span><span class="p">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">src</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">imgNode</span><span class="p">.</span><span class="nx">src</span> <span class="o">=</span> <span class="nx">src</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">})();</span>
+
+
+
+<span class="kd">var</span> <span class="nx">proxyImage</span> <span class="o">=</span> <span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+  <span class="kd">var</span> <span class="nx">img</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Image</span><span class="p">;</span>
+    <span class="nx">img</span><span class="p">.</span><span class="nx">onload</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+      <span class="nx">myImage</span><span class="p">.</span><span class="nx">setSrc</span><span class="p">(</span> <span class="k">this</span><span class="p">.</span><span class="nx">src</span> <span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="na">setSrc</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span> <span class="nx">src</span> <span class="p">){</span>
+      <span class="nx">myImage</span><span class="p">.</span><span class="nx">setSrc</span><span class="p">(</span> <span class="dl">'</span><span class="s1">url-loading</span><span class="dl">'</span> <span class="p">);</span>
+      <span class="nx">img</span><span class="p">.</span><span class="nx">src</span> <span class="o">=</span> <span class="nx">src</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">})();</span>
+
+<span class="nx">proxyImage</span><span class="p">.</span><span class="nx">setSrc</span><span class="p">(</span> <span class="dl">'</span><span class="s1">url</span><span class="dl">'</span> <span class="p">);</span>
+
+</code></pre></div></div>
+
+<h2 id="发布-订阅模式">发布-订阅模式</h2>
+
+<p>发布-订阅模式又叫观察者模式，它定义对象间的一种一对多的依赖关系，当一个对象的状态发生改变时，所有依赖于它的对象都将得到通知。</p>
+
+<p>在JS中非常常见：Ajax回调、事件监听…</p>
+
+<h2 id="组合模式">组合模式</h2>
+
+<p>组合模式将对象组合成树形结构，以表示“部分-整体”的层次结构。</p>
+
+<p>实例：文件扫描器</p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="cm">/******************************* Folder ******************************/</span>
+<span class="kd">var</span> <span class="nx">Folder</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span> <span class="nx">name</span> <span class="p">){</span>
+  <span class="k">this</span><span class="p">.</span><span class="nx">name</span> <span class="o">=</span> <span class="nx">name</span><span class="p">;</span>
+  <span class="k">this</span><span class="p">.</span><span class="nx">files</span> <span class="o">=</span> <span class="p">[];</span>
+<span class="p">};</span>
+
+<span class="nx">Folder</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">add</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span> <span class="nx">file</span> <span class="p">){</span>
+  <span class="k">this</span><span class="p">.</span><span class="nx">files</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span> <span class="nx">file</span> <span class="p">);</span>
+<span class="p">};</span>
+
+<span class="nx">Folder</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">scan</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span> <span class="dl">'</span><span class="s1">开始扫描文件夹: </span><span class="dl">'</span> <span class="o">+</span> <span class="k">this</span><span class="p">.</span><span class="nx">name</span> <span class="p">);</span>
+  <span class="k">for</span> <span class="p">(</span> <span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">file</span><span class="p">,</span> <span class="nx">files</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">files</span><span class="p">;</span> <span class="nx">file</span> <span class="o">=</span> <span class="nx">files</span><span class="p">[</span> <span class="nx">i</span><span class="o">++</span> <span class="p">];</span> <span class="p">){</span>
+    <span class="nx">file</span><span class="p">.</span><span class="nx">scan</span><span class="p">();</span>
+  <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="cm">/******************************* File ******************************/</span>
+
+<span class="kd">var</span> <span class="nx">File</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span> <span class="nx">name</span> <span class="p">){</span>
+  <span class="k">this</span><span class="p">.</span><span class="nx">name</span> <span class="o">=</span> <span class="nx">name</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">File</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">add</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+  <span class="k">throw</span> <span class="k">new</span> <span class="nb">Error</span><span class="p">(</span> <span class="dl">'</span><span class="s1">文件下面不能再添加文件</span><span class="dl">'</span> <span class="p">);</span>
+<span class="p">};</span>
+
+<span class="nx">File</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">scan</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span> <span class="dl">'</span><span class="s1">开始扫描文件: </span><span class="dl">'</span> <span class="o">+</span> <span class="k">this</span><span class="p">.</span><span class="nx">name</span> <span class="p">);</span>
+<span class="p">};</span>
+
+<span class="kd">var</span> <span class="nx">folder</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Folder</span><span class="p">(</span> <span class="dl">'</span><span class="s1">学习资料</span><span class="dl">'</span> <span class="p">);</span>
+<span class="kd">var</span> <span class="nx">folder1</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Folder</span><span class="p">(</span> <span class="dl">'</span><span class="s1">JavaScript</span><span class="dl">'</span> <span class="p">);</span>
+<span class="kd">var</span> <span class="nx">folder2</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Folder</span> <span class="p">(</span> <span class="dl">'</span><span class="s1">jQuery</span><span class="dl">'</span> <span class="p">);</span>
+<span class="kd">var</span> <span class="nx">file1</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">File</span><span class="p">(</span> <span class="dl">'</span><span class="s1">JavaScript 设计模式与开发实践</span><span class="dl">'</span> <span class="p">);</span>
+<span class="kd">var</span> <span class="nx">file2</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">File</span><span class="p">(</span> <span class="dl">'</span><span class="s1">精通 jQuery</span><span class="dl">'</span> <span class="p">);</span>
+<span class="kd">var</span> <span class="nx">file3</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">File</span><span class="p">(</span> <span class="dl">'</span><span class="s1">重构与模式</span><span class="dl">'</span> <span class="p">)</span>
+<span class="nx">folder1</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span> <span class="nx">file1</span> <span class="p">);</span>
+<span class="nx">folder2</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span> <span class="nx">file2</span> <span class="p">);</span>
+<span class="nx">folder</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span> <span class="nx">folder1</span> <span class="p">);</span>
+<span class="nx">folder</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span> <span class="nx">folder2</span> <span class="p">);</span>
+<span class="nx">folder</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span> <span class="nx">file3</span> <span class="p">);</span>
+<span class="nx">folder</span><span class="p">.</span><span class="nx">sacn</span><span class="p">()</span>
+
+</code></pre></div></div>
+
+<h2 id="享元模式">享元模式</h2>
+
+<p>享元模式的核心是运用共享技术来有效支持大量细粒度的对象。</p>
+
+<p>享元模式要求将对象的属性划分为内部状态与外部状态（状态在这里通常指属性）。</p>
+
+<ul>
+  <li>
+    <p>内部状态储存于对象内部。</p>
+  </li>
+  <li>
+    <p>内部状态可以被一些对象共享。</p>
+  </li>
+  <li>
+    <p>内部状态独立于具体的场景，通常不会改变。</p>
+  </li>
+  <li>
+    <p>外部状态取决于具体的场景，并根据场景而变化，外部状态不能被共享。</p>
+  </li>
+</ul>
+
+<p>通俗讲就是把需要大量的实例的共同点（内部状态）提取出来，只实例化一个，其他属性（外部状态）由管理器去操作、管理。</p>
+
+<p>书中的例子是有一个上传2000个文件的操作，有些是通过Flash上传，有些通过表单上传。new了2000个Upload实例。但是他们唯一不同的是其中uploadType不同，所以可以只new 2个Upload实例就行了，分别代表用Flash上传和表单上传，其他属性，也可以说是外部状态（文件名、文件大小等）由外部的管理器去修改、操作。</p>
+
+<h2 id="适配器模式">适配器模式</h2>
+
+<p>适配器模式的作用是解决两个软件实体间的接口不兼容的问题。使用适配器模式之后，原本由于接口不兼容而不能工作的两个软件实体可以一起工作。</p>
+
+<p>常见的场景如一些ORM框架，只需要填写简单的配置，在不同的环境下使用不同的数据库。Session的配置，模板引擎的配置等。</p>
+
+<p>在<a href="https://thinkjs.org/zh-cn/doc/3.0/adapter.html">ThinkJS框架的Adapter文档</a>中有写到</p>
+
+<p>前端方面我觉得pollyfill应该也算是适配器模式吧。</p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kd">function</span> <span class="nx">AnimationAdapter</span><span class="p">(){</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nb">window</span><span class="p">.</span><span class="nx">requestAnimationFrame</span><span class="p">){</span>
+    <span class="k">return</span> <span class="kd">function</span><span class="p">(</span><span class="nx">fn</span><span class="p">){</span>
+      <span class="k">return</span> <span class="nx">setTimeout</span><span class="p">(</span><span class="nx">fn</span><span class="p">,</span> <span class="mi">17</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nb">window</span><span class="p">.</span><span class="nx">requestAnimationFrame</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kd">let</span> <span class="nx">fn</span> <span class="o">=</span> <span class="nx">AnimationAdapter</span><span class="p">()</span>
+
+</code></pre></div></div>
+
+<h2 id="装饰器模式">装饰器模式</h2>
+
+<p>装饰者模式能够在不改变对象自身的基础上，在程序运行期间给对象动态地添加职责。</p>
+
+<p>装饰器在Python、ES6中都有，其本质就是一个函数。只是通过一个语法糖简化了传递函数的过程。可以将装饰器就看作一个函数A，参入的参数是函数B，对传入的函数B进行修改后返回一个新的函数C。</p>
+
+<p>但是在JS中装饰器不能用于一个函数。</p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="p">@</span><span class="nd">decorator</span>
+<span class="kd">class</span> <span class="nx">A</span> <span class="p">{}</span>
+<span class="c1">// 等同于</span>
+<span class="kd">class</span> <span class="nx">A</span> <span class="p">{}</span>
+<span class="nx">A</span> <span class="o">=</span> <span class="nx">decorator</span><span class="p">(</span><span class="nx">A</span><span class="p">)</span> <span class="o">||</span> <span class="nx">A</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>和适配器模式的区别：装饰器模式一般给函数、对象增加功能，可能增加很多个功能。而适配器通常只包装一次。</p>
+
+<p>一般用于AOP</p>
+
+<h2 id="中介者模式">中介者模式</h2>
+
+<p>中介者模式的作用就是解除对象与对象之间的紧耦合关系。增加一个中介者对象后，所有的相关对象都通过中介者对象来通信，而不是互相引用，所以当一个对象发生改变时，只需要通知中介者对象即可。</p>
+
+<p>最少知识原则，减少对象之间的联系。</p>
+
+
+  </div><a class="u-url" href="/2018/11/13/js-design-pattern.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Ran</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Ran</li><li><a class="u-email" href="mailto:ranjiayu#outlook.com">ranjiayu#outlook.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/ranjiayu"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">ranjiayu</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Life &amp; Code</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
