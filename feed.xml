@@ -1,4 +1,60 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="https://ranjiayu.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ranjiayu.github.io/" rel="alternate" type="text/html" /><updated>2021-04-18T00:01:35+08:00</updated><id>https://ranjiayu.github.io/feed.xml</id><title type="html">Ran</title><subtitle>Life &amp; Code</subtitle><entry><title type="html">Ruby proc</title><link href="https://ranjiayu.github.io/2021/04/17/proc-in-ruby.html" rel="alternate" type="text/html" title="Ruby proc" /><published>2021-04-17T23:48:07+08:00</published><updated>2021-04-17T23:48:07+08:00</updated><id>https://ranjiayu.github.io/2021/04/17/proc-in-ruby</id><content type="html" xml:base="https://ranjiayu.github.io/2021/04/17/proc-in-ruby.html">&lt;p&gt;虽然平时工作都是写JS和一点Golang，但是我还是很喜欢Ruby这门语言的。今天空闲的时候看了看Ruby元编程，由于是英文版，看得懵懵懂懂，特别是在对于Proc、lambda（其实也是一种块）的地方总是理解不到位。后来在网上看到一篇文章后豁然开朗。&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="https://ranjiayu.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ranjiayu.github.io/" rel="alternate" type="text/html" /><updated>2021-04-21T23:19:38+08:00</updated><id>https://ranjiayu.github.io/feed.xml</id><title type="html">Ran</title><subtitle>Life &amp; Code</subtitle><entry><title type="html">在M1 Macbook Air上安装Rails记录</title><link href="https://ranjiayu.github.io/2021/04/21/install-rails-on-apple-silicon.html" rel="alternate" type="text/html" title="在M1 Macbook Air上安装Rails记录" /><published>2021-04-21T23:17:07+08:00</published><updated>2021-04-21T23:17:07+08:00</updated><id>https://ranjiayu.github.io/2021/04/21/install-rails-on-apple-silicon</id><content type="html" xml:base="https://ranjiayu.github.io/2021/04/21/install-rails-on-apple-silicon.html">&lt;h2 id=&quot;env-基本情况&quot;&gt;Env 基本情况:&lt;/h2&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;ruby --version
+ruby 2.6.3p62 (2019-04-16 revision 67580) [universal.arm64e-darwin20]
+gem --version
+3.0.3
+which gem
+/usr/bin/gem
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;使用rbenv将系统ruby版本切换到3.0.0&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;rbenv global 3.0.0
+
+gem install rails
+rails new blog
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;errors-依次出现以下错误&quot;&gt;Errors 依次出现以下错误:&lt;/h2&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/Library/Ruby/Gems/2.6.0/gems/msgpack-1.4.2/lib/msgpack.rb:8:in `require': dlopen(/Library/Ruby/Gems/2.6.0/gems/msgpack-1.4.2/lib/msgpack/msgpack.bundle, 0x0009): missing compatible arch in /Library/Ruby/Gems/2.6.0/gems/msgpack-1.4.2/lib/msgpack/msgpack.bundle - /Library/Ruby/Gems/2.6.0/gems/msgpack-1.4.2/lib/msgpack/msgpack.bundle (LoadError)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;LoadError: dlopen(/Users/jiayuran/.rbenv/versions/3.0.0/lib/ruby/gems/3.0.0/gems/puma-5.2.2/lib/puma/puma_http11.bundle, 9): no suitable image found.  Did find:
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;LoadError: dlopen(/Users/jiayuran/.rbenv/versions/3.0.0/lib/ruby/gems/3.0.0/gems/ffi-1.15.0/lib/ffi_c.bundle, 9): no suitable image found.  Did find:
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;LoadError: Could not open library '/Users/jiayuran/.rbenv/versions/3.0.0/lib/ruby/gems/3.0.0/gems/sassc-2.4.0/ext/libsass.bundle': dlopen(/Users/jiayuran/.rbenv/versions/3.0.0/lib/ruby/gems/3.0.0/gems/sassc-2.4.0/ext/libsass.bundle, 5): no suitable image found.  Did find:
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;LoadError: dlopen(/Users/jiayuran/.rbenv/versions/3.0.0/lib/ruby/gems/3.0.0/gems/bindex-0.8.1/lib/skiptrace/internal/cruby.bundle, 9): no suitable image found.  Did find:
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;solution-解决办法&quot;&gt;Solution 解决办法:&lt;/h2&gt;
+
+&lt;p&gt;Notice the gem &lt;strong&gt;IS NOT&lt;/strong&gt; /usr/bin/gem&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;which gem # /Users/jiayuran/.rbenv/shims/gem
+
+gem uninstall \[package_name\]
+gem install \[package_name\]
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;看起来一切如愿，接下来&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;cd blog
+rails s
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;抛出错误&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/Users/jiayuran/.rbenv/versions/3.0.0/lib/ruby/gems/3.0.0/gems/bootsnap-1.7.4/lib/bootsnap/load_path_cache/core_ext/kernel_require.rb:23:in `require': dlopen(/Users/jiayuran/.rbenv/versions/3.0.0/lib/ruby/gems/3.0.0/gems/nio4r-2.5.7/lib/nio4r_ext.bundle, 9): no suitable image found.  Did find: (LoadError)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;同样的方法，安装后就正常启动了。&lt;/p&gt;</content><author><name></name></author><summary type="html">Env 基本情况:</summary></entry><entry><title type="html">Ruby proc</title><link href="https://ranjiayu.github.io/2021/04/17/proc-in-ruby.html" rel="alternate" type="text/html" title="Ruby proc" /><published>2021-04-17T23:48:07+08:00</published><updated>2021-04-17T23:48:07+08:00</updated><id>https://ranjiayu.github.io/2021/04/17/proc-in-ruby</id><content type="html" xml:base="https://ranjiayu.github.io/2021/04/17/proc-in-ruby.html">&lt;p&gt;虽然平时工作都是写JS和一点Golang，但是我还是很喜欢Ruby这门语言的。今天空闲的时候看了看Ruby元编程，由于是英文版，看得懵懵懂懂，特别是在对于Proc、lambda（其实也是一种块）的地方总是理解不到位。后来在网上看到一篇文章后豁然开朗。&lt;/p&gt;
 
 &lt;p&gt;可以把块看作是一个函数，在JavaScript中可以将函数作为参数传递给其他函数使用，比如最常见是回调函数的使用，以下例子：&lt;/p&gt;
 
@@ -1182,538 +1238,4 @@ install_main
 
 &lt;p&gt;优点是服务端消耗更少的资源（不用去保存状态）。&lt;/p&gt;
 
-&lt;p&gt;至于很多文章说的安全，无法认同。难道服务端用SCRET KEY加密后就是安全的了吗？一般jwt保存在localStorage里面，泄漏了jwt同样会导致身份被盗用。可以通过在payload里面设置过期时间来避免泄漏后造成的风险。所以“更安全”我认为是不成立的。&lt;/p&gt;</content><author><name></name></author><summary type="html">发现只有在写博客的时候，才会认真地去学习。总结一下我在学习、写前后端项目中的一些有关身份验证的心得体会。</summary></entry><entry><title type="html">秋招面试记录</title><link href="https://ranjiayu.github.io/2018/09/29/autumn-interview.html" rel="alternate" type="text/html" title="秋招面试记录" /><published>2018-09-29T19:43:00+08:00</published><updated>2018-09-29T19:43:00+08:00</updated><id>https://ranjiayu.github.io/2018/09/29/autumn-interview</id><content type="html" xml:base="https://ranjiayu.github.io/2018/09/29/autumn-interview.html">&lt;p&gt;2018年秋招面试记录。&lt;strong&gt;所记录的内容并非完整，部分是印象比较深的部分。&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;offer = 实力 + 运气。运气包括了公司的HC，部门匹配度，面试官等因素。自身的实力当然是最重要的。其实在面试的过程学到了很多东西：&lt;/p&gt;
-
-&lt;p&gt;一、知识的查漏补缺；每一场面试下来一定要有所收获。&lt;/p&gt;
-
-&lt;p&gt;二、表达能力；特别是在电话面试的时候，能够清晰地把想表达的意思表达出去非常重要！&lt;/p&gt;
-
-&lt;p&gt;三、谦虚；每一个面试官应该都有很多值得学习的地方，有机会向面试官寻求一些建议或询问不足的地方。&lt;/p&gt;
-
-&lt;!-- more --&gt;
-
-&lt;h2 id=&quot;thoughtworks&quot;&gt;ThoughtWorks&lt;/h2&gt;
-
-&lt;p&gt;岗位：软件开发&lt;/p&gt;
-
-&lt;p&gt;Homework：一个生成迷宫的程序，使用工厂模式、格式化输入、输入验证、写单元测试等。&lt;/p&gt;
-
-&lt;p&gt;写完Homework后，在此基础上加两个功能。写完后对问代码有什么可以优化的地方，引申出了一些问题。如：if else 如果嵌套过多该如何处理。问的其他问题和简历相关度很大。以下是不完整记录：&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.React数据流的理解
-2.前端工程化
-3.Django和Tornado的区别
-4.如何实现单例模式
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;基本没有问算法相关，个人感觉主要是对对工程、编码能力的要求。&lt;/p&gt;
-
-&lt;h2 id=&quot;腾讯云&quot;&gt;腾讯云&lt;/h2&gt;
-
-&lt;p&gt;晚上十点来的电话，把我问得一脸懵逼。首先是自我介绍，讲项目。&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.Python的异常处理
-2.Python执行Linux命令
-3.Python多进程和多线程
-4.Tornado协程
-5.Django项目的结构
-6.OSI七层模型以及功能
-7.ping用的什么协议
-8.TCP三次握手
-9.Celery Broker
-10.Redis常用的数据结构类型
-11.Websocket
-12.Bootstrap和Jquery相关的问题
-13.设计一个后台跑任务前端实时输出日志的功能
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;其他主要是一些Linux、网络相关的知识，没有任何准备，也没复习，比较凉。&lt;/p&gt;
-
-&lt;h2 id=&quot;腾讯sng&quot;&gt;腾讯SNG&lt;/h2&gt;
-
-&lt;p&gt;由于问的问题太多太杂，差不多问了一个小时，完全是知识点轰炸，所以记录几个答得不好的问题。&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.闭包是什么，如何产生，为什么会产生（底层原理）
-2.浏览器针对重绘和重排做了哪些优化
-3.Diff算法的策略（tree diff, component diff, element diff）
-4.XSS防御的方法，前端方面我说了escape过滤，对特殊字符进行转义，插入HTML片段innerHTML-&amp;gt;innerText，（面试官好像不满意，感觉没有答到点子上）
-5.CORS跨域（withCredentials、简单请求、非简单请求的预检请求）
-6.Webpack、gulp、grunt的区别
-7.协商缓存的请求头和响应头（当时If-None-Match和Last-Modified记混了，凉）
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;猿辅导&quot;&gt;猿辅导&lt;/h2&gt;
-
-&lt;p&gt;听说开的薪资十分高，但是要求也很严格。一开始问了几个简历相关的问题后，如React的setState、VirtualDOM、Redux、跨域以后便开始通过石墨文档在线同步手撕代码。&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.写一个函数toPromise将一个获取数据函数fn转化为Promise
-2.Promise.all相关
-已知：loadImage(src).then().catch()
-实现：loadImageList(srcList).then().catch()
-扩展1：自己实现Promise.all且保证结果顺序与srcList一致
-扩展2：加一个limit参数限制最大同时请求数量
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;language-javascript highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;map&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;arr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;fn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;concurrency&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;nx&quot;&gt;concurrency&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;concurrency&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;Promise&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;resolve&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;reject&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-      &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;completed&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-      &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;started&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-      &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;running&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-      &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;results&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;Array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;arr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-      &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;replenish&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;completed&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;arr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-          &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;resolve&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;results&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;running&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;concurrency&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;started&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;arr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-          &lt;span class=&quot;nx&quot;&gt;running&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;++&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-          &lt;span class=&quot;nx&quot;&gt;started&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;++&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-          &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;index&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;started&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-          &lt;span class=&quot;nx&quot;&gt;fn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;call&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;arr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;arr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// item,index&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;then&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-              &lt;span class=&quot;c1&quot;&gt;// console.log('done');&lt;/span&gt;
-              &lt;span class=&quot;nx&quot;&gt;running&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;--&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-              &lt;span class=&quot;nx&quot;&gt;completed&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;++&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-              &lt;span class=&quot;nx&quot;&gt;results&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-              &lt;span class=&quot;nx&quot;&gt;replenish&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;})&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;catch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;reject&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-      &lt;span class=&quot;p&quot;&gt;})();&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;3.Flatten
-
-List: [1, 2, [3, 4], [5, 6, [7, 8], 9], 10, 11]
-depth = 1: [1, 2, 3, 4, 5, 6, [7, 8], 9, 10, 11]
-depth = 2: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;language-javascript highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;flatten&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;depth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;depth&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;list&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;++&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;Array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;isArray&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])){&lt;/span&gt;
-            &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;push&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-            &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;concat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;flatten&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;depth&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;二面（现场面试）：一上来就是三道手撕代码，然后结束面试。&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.类似[孤岛问题](https://leetcode.com/problems/number-of-islands/description/)
-由于做过类似的，很快就说出了思路，面试官说那我们换道题（我的内心是崩溃的）
-
-2.一个数组实现两个栈
-a.奇数、偶数坐标分别代表两个栈，b.中间作为两个栈的底部，分别向左和向右扩展。都说到了思路，不知道面试官好像不太满意。
-
-3.求一颗二叉树的最大宽度（哪一层节点数最多）
-勉强写出来了，但是代码可能不太好看。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;360-搜索&quot;&gt;360 搜索&lt;/h2&gt;
-
-&lt;p&gt;一面：面试官比较随意，上来先是自我介绍以及谈谈对前端的理解。感觉是让你自己自由发挥，看看能说出多少。这一部分自由发挥得很一般，不知道该说点啥，胡扯一通。问了一些有关HTML5、CSS相关的话题，甚至PSD切图。JS问了闭包、ES6/Promise、Webpack、Nodejs了解程度以及Vue的双向绑定实现等等，都是些常规问题。&lt;/p&gt;
-
-&lt;p&gt;列出几个答得不好得问题&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.如果浏览器不支持JSON.parse怎么办
-用eval
-
-2.Meta标签有哪些
-这个的确平时用到的比较少，就回答了viewport, charset, keywords等，其实还有很多有用的。
-&amp;lt;meta http-equiv=&quot;参数&quot; content=&quot;具体的描述&quot;&amp;gt;
-
-* http-equiv属性(相当于http的文件头作用)
-
-* content-Type
-
-* X-UA-Compatible(浏览器采取何种版本渲染当前页面)
-
-* cache-control(指定请求和响应遵循的缓存机制)
-
-* expires(网页到期时间)
-
-* refresh(自动刷新并指向某页面)
-
-* Set-Cookie(cookie设定)
-
-
-3.页面性能优化
-没说到preload predns prefetch等。
-&amp;lt;link rel=&quot;dns-prefetch&quot; href=&quot;//example.com&quot;&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;二面：考察JS相关的多一点，记录几个印象比较深刻的问题。&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.parseInt(0.000000008)
-答案8，这个考parseInt的隐式转换，0.000000008 -&amp;gt; 8e-9 -&amp;gt; 8
-
-
-2.(() =&amp;gt; {}).length 
-答案0，function的length属性，形参数量
-
-
-3.1 in [1]
-答案false，[1] == { 0: 1 }，in操作符取key比较 1 != 0
-
-
-4.伪类::nth-child(an+b) 干什么n从多少开始算
-答案：选取第a的倍数+b个子元素，n从1开始计算
-
-5.visibility: hidden 如何不能点击
-答案：CSS3中的pointer-event
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;英语流利说&quot;&gt;英语流利说&lt;/h2&gt;
-
-&lt;p&gt;一面：&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.两栏布局、position相关问题(fixed,absolute)、垂直居中、Flex(flex自己用的很少，答得不好)
-2.斐波拉契数列、数组去重、数组中包含对象的去重
-3.TCP、UDP的区别与HTTP的关系、HTTP、HTTPS、HTTPS原理以及什么加密算法
-4.动画setTimeout为什么是16ms（项目中写的一个polyfill）
-5.React生命周期；Redux的思想以及在白板上画出数据流图
-6.项目中为什么要用Redis
-7.滚动不用JS如何实现？(CSS的一个新特性)
-8.点击ABCD选项将某选项通过动画移动到某个位置的实现思路
-9.讲讲C语言中的malloc以及如何释放(free) -&amp;gt; 引申出JS相关垃圾回收机制
-10.捕获和冒泡的过程
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;二面：面非常广，从技术-&amp;gt;生活-&amp;gt;学习各方面都问&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.HTTP状态码能说多少说多少(1XX,200,301,302,304,403,404,405,500,502,504)，着重讲了下304
-2.CDN以及前端部署
-3.实习项目中难点如何解决
-4.学校做项目和公司最大的不同
-5.实习中有哪些收获，学到了什么 -&amp;gt; 流程化开发、ABTest（如何实现的，达到什么目的）
-6.平时的学习方法，最近看什么书，什么爱好
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;百度-流量质量控制部&quot;&gt;百度 流量质量控制部&lt;/h2&gt;
-
-&lt;p&gt;一面：&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.HTML5新特性
-2.输入url到浏览器展示的过程（一个数据包的传输过程，从IP讲到DNS，交换机、路由器、Nginx、WebApplication、浏览器渲染等多个角度去讲）
-3.CSS相关：BFC（比如解决塌陷的原理是什么）、清除浮动还有什么方法、垂直水平居中
-4.JS相关：prototype原型链；方法、属性继承实现；原型链继承后为什么要改constructor指向；闭包的应用；
-5.快排过程，复杂度是多少，最坏情况是怎么样的，如何优化（每次排序随机选择pivot）
-5.同步、异步、阻塞、非阻塞的区别。这个答得不好，但是面试官非常耐心地给我讲了CPU的调度方式、中断等等，起码讲了有15分钟吧，学到了不少的知识，也知道了自己的薄弱点。中途还问了进程的3个状态，以及这三个状态是如何转换的。“就绪”和“阻塞”态有什么不同。
-6.锁，死锁是什么，如何产生，MySQL的锁
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;二面：&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.讲一个印象比较深的项目
-2.为什么使用Redis；Redis常用的数据结构；这种情况为什么不用MySQL；
-3.JQuery和前端MV*框架相比优点、缺点，适用的场景
-4.对前端、后端开发的理解
-
-还有些问题记不住了，聊的东西总体来说是大方向上的，没有去讲很细节的东西。
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;三面：&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;经理面。聊人生、聊职业规划、聊部门
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;网易考拉&quot;&gt;网易考拉&lt;/h2&gt;
-
-&lt;p&gt;一面：序号前端1组，面试体验非常好，问的东西也是基础，而且说话和善。&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.垂直居中：尽量多写，flex属性以及各个属性的意思。position absolute，relative
-2.BFC、清除浮动
-3.原型链、继承实现
-4.闭包，写一个节流函数
-5.const a = {}; a.b = 1; 可以吗
-6.讲下Promise大致原理
-7.String实例有哪些方法，Array实例有哪些方法（当时给自己挖了坑，valueOf和toString没说好）
-8.学习JS过程中看了哪些书
-9.常见的HTTP请求头、响应头
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;二面：面试官很严肃，全程看电脑&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.写一个数组去重，讲下思路
-2.写一个发布订阅模式
-3.webpack自己配置过吗，大致说一下，以及优化点(Tree shaking和增量更新等)。
-4.React生命周期；shouldComponentUpdate具体是干什么的（扯出了virtualDOM、Diff等）
-5.实习过程中学到了什么
-6.React高阶组件以及举例子，场景有哪些
-7.React组件有哪些形式（一：类，函数。二：受控，不受控，无状态）
-8.讲一下Redux的三大原则，这样设计的好处
-9.React Router如何实现的；HTML5的history和hash的区别；BrowerHistory后端需要如何配合
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;爱奇艺&quot;&gt;爱奇艺&lt;/h2&gt;
-
-&lt;p&gt;凉凉的一面，走之前面试官小哥还说：“我送一下你吧”：&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.主线程和子线程，谁操作内存
-2.进程间共享内存吗
-3.&quot;abc&quot; 占多少字节
-4.MySQL 中 int(x) x是指位数还是2^x字节
-5.MySQL范式；MySQL索引，建多了会怎么样，哪种情况下建，
-6.MySQL中的锁，行锁还是表锁，哪个效率高点，什么场景下会出现
-7.Redis中常用的数据结构
-8.网络几层模型；tcp、udp的区别以及和socket的关系
-9.鸭子类型
-10.迭代器和生成器哪个效率高，为什么
-11.Python2 检查str还是unicode
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;感觉基础知识答得太烂，总结：我菜&lt;/p&gt;
-
-&lt;h2 id=&quot;猎豹移动&quot;&gt;猎豹移动&lt;/h2&gt;
-
-&lt;p&gt;一面：&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.自我介绍
-2.CSS垂直居中、position的各个值以及使用
-3.闭包以及作用；节流和防抖的应用场景；
-4.React生命周期；Ajax请求应该在哪个周期发起
-5.function component 和 class component
-6.数组去重（很好奇为什么十次有八次都要考这个）
-7.box-sizing属性；盒子模型
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;二面：&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.统计数组中出现'1'的次数，['abc123', 1234, '761saz', 5610']
-2.TOP K问题以及优化；讲一个排序算法
-3.输入URL到浏览器展示的过程；onload和onready区别
-4.跨域；（详细说了下CORS、JSONP过程）
-5.GET和POST区别
-
-还有些常规JS问题，实在是忘了。还聊了一下部门主要的业务
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;贝壳&quot;&gt;贝壳&lt;/h2&gt;
-
-&lt;p&gt;一面：&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.闭包理解；应用：实现increse()增加，get()获取
-2.双飞翼布局；如何解决浮动问题
-3.作用域链的理解和原理
-4.var a = 5; function b(){ function c(){ console.log(a); var a = 10;  }; c() } 输出什么
-5.Session
-6.对React的理解
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;二面：体验较差&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.介绍项目说难点
-2.硬币找零问题（我用的动态规划，面试官一直强调这是组合问题不是排列问题，说这个方法不行。我表示很懵逼，没办法最后就写了一个暴力破解）
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;最后二面挂了，有点不解。&lt;/p&gt;
-
-&lt;h2 id=&quot;度小满&quot;&gt;度小满&lt;/h2&gt;
-
-&lt;p&gt;一面：&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.React生命周期
-2.作用域和作用域链
-3.Promise
-4.call bind apply，apply实现bind
-5.es6继承
-6.首屏白屏优化
-7.http传输的安全
-8.web Storage和cookie
-9.双飞翼布局
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;二面：&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.CPU的GHz代表什么意思
-2.写代码：设计一个验证(Valid)类
-3.Hybird中H5与原生通信的注意点（线程、性能、通信格式等）
-4.Tree Shaking 原理；你来写如何实现；
-5.写代码，二叉树中序遍历
-6.写代码，merge两个有序链表
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;今日头条&quot;&gt;今日头条&lt;/h2&gt;
-
-&lt;p&gt;一面：其他都是基础知识，印象不太深刻，10分钟就结束了。&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.自适应屏幕宽度一半的正方形
-2.选择排序；swap的不用变量的交换
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;第四范式&quot;&gt;第四范式&lt;/h2&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;一面：基础知识（HTML,CSS,JS） + 手撕代码（1.类似Vue的模板语法解析、2.getAttr(obj, 'user.name')获取属性值）
-二面：基础知识 + 大方向上的问题。其中有一个问题没答上来，如何保证cookie安全，让JS不能操作cookie：http-only
-三面：聊人生，聊职业规划，聊部门
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;京东-京东云&quot;&gt;京东 京东云&lt;/h2&gt;
-
-&lt;p&gt;一面：&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.React理解
-2.React-Router的两种模式的实现和异同
-3.后端渲染和前端渲染的区别
-4.自己一个React项目结构是怎么样的
-5.项目中用到了哪些设计模式；用ES6实现一个单例模式
-6.跨域；讲一下代理；Nginx
-7.闭包；作用域链
-8.Webpack的使用
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;二面：&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.React开发的感受以及大致的实现（Diff、VirtualDOM）；缺点是什么（个人觉得从应用场景去讲）
-2.JSX转码后输出的是什么
-3.父子组件、子子组件中的通信
-4.介绍一下Redux，以及Redux和React结合使用
-5.介绍一下Vue和React的不同；双向绑定的实现
-6.CSS3特性；动画：一个正方形放大到2倍；
-7.Flex布局
-8.事件模型；为什么会有冒泡和捕获两种；事件委托，好处是什么
-9.跨域；重点讲CORS
-10.前端性能优化
-11.HTTP2和HTTP1.1和HTTP1.0区别；HTTP缓存；HTTP长连接
-12.TCP三次握手
-13.重排和重绘
-14.Promise
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;美团-新到店&quot;&gt;美团 新到店&lt;/h2&gt;
-
-&lt;p&gt;一面：&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;输入URL到展示的过程
-页面加载是单进程还是多进程
-TCP三次握手过程
-TCP包一次最大传输数据多大
-localStorage存储量
-HTTP缓存
-跨域如何解决
-两道布局题
-线上CDN挂了如何处理、容错方案
-Nginx负载均衡如何与Node进程通信；通信的原理是什么；这种架构名称
-如果保证负载均衡后面的服务可用
-hello world级别的node进程复制一个进程大约需要申请多少内存
-关注过QPS等数据吗
-node一般启动最大进程数与什么有关；关系式
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;二面：&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.讲一下链表、二叉树、栈、队列
-2.链表和数组的区别
-3.用过图吗
-4.查找一般使用哪些结构
-5.排序算法；哪些稳定
-6.写一个快排
-7.HTTP/TCP/UDP的区别和联系
-8.HTTP头有哪些，如何使用
-9.HTTP状态码有哪些，什么意思
-10.CDN和DNS是什么
-11.谈谈用NodeJS、Python、Ruby等的感受（因为他问我博客用什么写的，Ruby on Rails。中心突出语言不重要）
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;三面：主要聊了一些架构、前端理解等大方向的问题，谈谈项目设计的结构，用到的设计模式等等。生活、为人、遇到困难的解决办法、学习的方法等等。最后面试官还给我提出了一些建议：1.看看《代码大全》这本书，基础不错，但是需要加强设计这方面的知识。2.佛系地与人相处可能并不是一个特别好的点，争执有时可能会更好的促进人际关系。&lt;/p&gt;
-
-&lt;h2 id=&quot;拼多多&quot;&gt;拼多多&lt;/h2&gt;
-
-&lt;p&gt;一面：&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.前端渲染和后端渲染的区别、优缺点
-2.React生命周期
-3.React用的什么版本，最新的生命周期有了解吗
-4.讲一下Redux的作用
-5.闭包是什么
-6.继承的实现
-7.new 操作符做了哪些事情
-8.垂直水平居中
-9.position的值以及使用
-10.CSS一个div实现圆环
-11.排序算法哪些稳定
-12.讲一下快排，时间复杂度多少
-13.1-100 无序，求缺少的数
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;阿里&quot;&gt;阿里&lt;/h2&gt;
-
-&lt;p&gt;早听说没用HC了，走一个流程。&lt;/p&gt;
-
-&lt;p&gt;简历面：&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.聊项目
-2.谈下React
-3.一个CSS题
-4.一道编程题
-5.TOP K问题
-6.cookie和session
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;腾讯&quot;&gt;腾讯&lt;/h2&gt;
-
-&lt;p&gt;一面：在酒店的一个房间，进去先做一张卷子。一些基础题+2道编程题（1.实现类、私有属性、方法 2.高精度加法）&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.304说一下，完整过程（还给我埋坑：last-modified只能精确的秒吗）
-2.同源策略、跨域（具体说一下iframe的跨域）
-3.小程序和H5的区别
-4.React中Key的作用
-5.React中PureComponent和Component区别
-6.UI组件和容器组件
-7.正则匹配QQ号
-8.5:15 两个指针的夹角
-9.实习的公司对你的评价
-10.职业规划
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;面试官每个问题都想了好多秒才问的。有点迷&lt;/p&gt;
-
-&lt;h2 id=&quot;新浪微博&quot;&gt;新浪微博&lt;/h2&gt;
-
-&lt;p&gt;一面：&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.JS基本数据类型
-2.JS引用数据类型
-3.快排
-4.深拷贝、浅拷贝
-5.Python中常用的数据类型
-6.JS的异步是怎么样的
-7.回调函数的场景有哪些
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;二面：&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1.Hybird原理
-2.小程序原理
-3.React JSX语法本质是什么
-4.setState干了什么
-5.如果自己设计React大致思路（其实就是React的思路）
-6.Webpack配置
-7.CORS跨域
-8.移动端适配
-9.rem和px以及flexiable.js原理
-10.正则表达式解析URL query参数
-11.node 内存泄漏排除问题
-12.node 事件循环机制
-13.koa或者express是如何处理post提交的数据
-14.最大连续子数组和以及坐标
-15.随机生成16位a-zA-Z0-9字符串
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;====================================&lt;/p&gt;
-
-&lt;p&gt;感谢之前实习的公司携程，实习过程中学到了很多东西，而且部门老大也非常好。&lt;/p&gt;
-
-&lt;p&gt;但行好事，莫问前程。&lt;/p&gt;
-
-&lt;p&gt;2018.9.29&lt;/p&gt;</content><author><name></name></author><summary type="html">2018年秋招面试记录。所记录的内容并非完整，部分是印象比较深的部分。</summary></entry></feed>
+&lt;p&gt;至于很多文章说的安全，无法认同。难道服务端用SCRET KEY加密后就是安全的了吗？一般jwt保存在localStorage里面，泄漏了jwt同样会导致身份被盗用。可以通过在payload里面设置过期时间来避免泄漏后造成的风险。所以“更安全”我认为是不成立的。&lt;/p&gt;</content><author><name></name></author><summary type="html">发现只有在写博客的时候，才会认真地去学习。总结一下我在学习、写前后端项目中的一些有关身份验证的心得体会。</summary></entry></feed>
