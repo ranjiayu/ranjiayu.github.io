@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Vert.x 笔记 | Jiayu Ran</title>
+<meta name="generator" content="Jekyll v4.2.2" />
+<meta property="og:title" content="Vert.x 笔记" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="很久没有写技术相关的内容了。最近在写一个TCPSocket服务器，用于与硬件交互，由于是自定义协议，所以涉及到了一些字节流处理。" />
+<meta property="og:description" content="很久没有写技术相关的内容了。最近在写一个TCPSocket服务器，用于与硬件交互，由于是自定义协议，所以涉及到了一些字节流处理。" />
+<link rel="canonical" href="https://ranjiayu.github.io/2024/03/05/vertx-01.html" />
+<meta property="og:url" content="https://ranjiayu.github.io/2024/03/05/vertx-01.html" />
+<meta property="og:site_name" content="Jiayu Ran" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2024-03-05T06:46:00+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Vert.x 笔记" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2024-03-05T06:46:00+08:00","datePublished":"2024-03-05T06:46:00+08:00","description":"很久没有写技术相关的内容了。最近在写一个TCPSocket服务器，用于与硬件交互，由于是自定义协议，所以涉及到了一些字节流处理。","headline":"Vert.x 笔记","mainEntityOfPage":{"@type":"WebPage","@id":"https://ranjiayu.github.io/2024/03/05/vertx-01.html"},"url":"https://ranjiayu.github.io/2024/03/05/vertx-01.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://ranjiayu.github.io/feed.xml" title="Jiayu Ran" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Jiayu Ran</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Vert.x 笔记</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2024-03-05T06:46:00+08:00" itemprop="datePublished">Mar 5, 2024
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>很久没有写技术相关的内容了。最近在写一个TCPSocket服务器，用于与硬件交互，由于是自定义协议，所以涉及到了一些字节流处理。</p>
+
+<p>在同事的推荐下使用了Vert.x，以下是一些我的理解和学习笔记。</p>
+
+<h2 id="vertx-和-verticle">Vertx 和 Verticle</h2>
+
+<p>Vertx实例包括EventBus、Shared Data、Global Session等，Verticle可以看作是一个线程。由于是单线程，所以一般启动多个Verticle实例来充分发挥多核性能。可以Verticle绑定到一个端口，参考<a href="https://vertx.io/docs/vertx-core/java/#_scaling_sharing_tcp_servers">官方文档 Scaling - sharing TCP servers</a></p>
+
+<h2 id="异步编程">异步编程</h2>
+
+<p>这是Vertx的特点，和Nodejs非常相似。比起Netty这样的框架，需要处理多线程之间的问题，考虑加锁、线程安全问题。由于是单线程模型，写的代码就不是一个顺序的方式，有一定的上手成本。如果有做过前端开发，那么就非常好理解。和Nodejs一样通过回调或者Promise、Future等方式来书写代码。</p>
+
+<h2 id="什么时候使用多个verticle">什么时候使用多个Verticle</h2>
+
+<p>既可以按照业务逻辑拆分，也可以按照功能拆分。我的做法是启动了X个TCP Server Verticle（如果只启动一个实例，那么无法充分发挥多核CPU的性能），用于处理Socket连接。启动了Y个线程用于操作数据库/文件的Verticle实例，因为不是所有socket连接都会涉及到相关操作。这需要具体根据业务场景而定。（这里的线程是指vertx的eventloop线程）。比如在Nodejs中，写代码的时候都是只考虑单线程的逻辑，但是部署的时候可以多进程部署。</p>
+
+<p>很明显，当然也并不是线程数越多越好，默认情况下vertx会启动(CPU数*2)个eventloop线程，如果线程过多反而导致上下文切换的开销不小。</p>
+
+<h2 id="执行同步代码">执行同步代码</h2>
+
+<p>大部分的第三方库都有官方提供的异步实现，比如Redis、MySQL客户端等。当然一些库没有，可以通过vertx提供的vertx.executeBlocking方法来将同步代码包起来执行，它会自动使用Worker线程去处理。Worker线程通常情况下是不需要手动去启动、处理的。</p>
+
+<h2 id="verticles-通信">Verticles 通信</h2>
+
+<ul>
+  <li>Eventbus，一个vertx实例只有一个eventbus（类似EventEmitter）</li>
+  <li>Shared Data API（异步锁、Map、计数器）</li>
+  <li></li>
+</ul>
+
+<h2 id="tcp-socket-相关">TCP Socket 相关</h2>
+
+<p>TCP协议已经解决了可靠性和传输有序性的问题，写的时候需要考虑到TCP的数据包是流的形式，比如多个TCP包发过来的时候服务器接受到的可能是一个，可能是多个一起，总之需要在应用层自己处理边界问题。参考<a href="https://draveness.me/whys-the-design-tcp-message-frame/">为什么 TCP 协议有粘包问题</a>。常见的分割的方式比如\r\n，定长，协议头写入后续包的长度，参考<a href="https://vertx-china.github.io/docs/vertx-core/java/#_record_parser">官方文档 Record parser</a>，参考<a href="https://blog.csdn.net/neosmith/article/details/93724102">Vertx + Protobuf二进制协议解析</a>。</p>
+
+<p>Vertx实现的Buffer类会自动扩容，处理数据也非常的方便。</p>
+
+<p>BTW，一个实用的API：<a href="https://vertx-china.github.io/docs/vertx-core/java/#_event_bus_write_handler">setRegisterWriteHandler</a>，在将应用切分为多个Verticle后，需要在其他的verticle中向socket中写数据时，使用这个API非常方便。</p>
+
+<h2 id="其他">其他</h2>
+
+<p>待续…摸索中</p>
+
+<h2 id="参考资料">参考资料</h2>
+
+<p><a href="https://vertx.io/docs/vertx-core/java/">https://vertx.io/docs/vertx-core/java/</a></p>
+
+<p><a href="https://www.zhihu.com/question/308972356">https://www.zhihu.com/question/308972356</a></p>
+
+<p><a href="https://draveness.me/whys-the-design-tcp-message-frame/">https://draveness.me/whys-the-design-tcp-message-frame/</a></p>
+
+<p><a href="https://blog.csdn.net/neosmith/article/details/93724102">https://blog.csdn.net/neosmith/article/details/93724102</a></p>
+
+  </div><a class="u-url" href="/2024/03/05/vertx-01.html" hidden></a>
+</article>
+
+      </div>
+    </main></body>
+
+</html>
