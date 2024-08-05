@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="description" content="非常喜欢Pixel4a以及Pixel5的外观，在二手市场上买了一个当作玩具，以及在淘宝上买了一张平均下来月租很便宜的流量卡，到手后发现是电信卡，Pixel4a不支持电信卡打电话和发短信，网上看了一些资料后开始。" />
+  <link rel="canonical" href="/2021/12/12/pixel4a-root.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preload" href="/assets/fonts/open-sans-v17-latin-regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+  <link rel="preload" href="/assets/fonts/open-sans-v17-latin-regular.woff" as="font" type="font/woff" crossorigin="anonymous">
+  <link rel="stylesheet" href="/assets/main.css"/>
+  <link rel="alternate" type="application/rss+xml" title="Jiayu" href="/feed.xml" />
+  <title>Pixel4a破解电信记录</title>
+  
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "author": "",
+        "datePublished": "2021-12-12T10:36:07+08:00",
+        "headline": "Pixel4a破解电信记录",
+        "url": "/2021/12/12/pixel4a-root.html",
+        "inLanguage": "en-US",
+        "isFamilyFriendly": "true",
+        "keywords": "pixel",
+        "image": "/favicon.ico",
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": "/2021/12/12/pixel4a-root.html"
+       }
+      }
+    </script>
+  
+</head>
+
+<body>
+<div class="container">
+  <nav class="top-nav">
+  <a class="nav-item" href='/'>Home</a>
+  | <a class="nav-item" href='/tags'>Tags</a>
+  | <a class="nav-item" href='/about'>About</a>
+  | <a class="nav-item" href="/feed.xml">RSS</a>
+  | <a class="nav-item dark-light-switch" href="#"></a>
+</nav>
+
+  <hr class="stylish"/>
+  <div class="_progress-wrapper">
+  <div id="_progress"></div>
+</div>
+
+<header>
+  <h1>Pixel4a破解电信记录</h1>
+  <header class="title-tags">
+    <time datetime="2021-12-12T10:36:07+08:00">12 December, 2021. It was a Sunday.</time>
+    <div class="tags-container">
+      Posted under <span>
+          
+            <a class="tags" href="/tags#pixel">pixel</a>
+          
+        </span>
+      &nbsp;
+    </div>
+  </header>
+</header>
+
+<hr class="stylish" />
+
+<main role="main">
+
+  <article>
+
+    <section class="content">
+      <p>非常喜欢Pixel4a以及Pixel5的外观，在二手市场上买了一个当作玩具，以及在淘宝上买了一张平均下来月租很便宜的流量卡，到手后发现是电信卡，Pixel4a不支持电信卡打电话和发短信，网上看了一些资料后开始。</p>
+
+<h2 id="总体步骤">总体步骤</h2>
+
+<ul>
+  <li>Step1: 解锁</li>
+  <li>Step2: Root(Magisk)<a href="https://github.com/topjohnwu/Magisk/releases">下载地址</a></li>
+  <li>Step3: 安装Magisk模块</li>
+</ul>
+
+<h2 id="前提">前提</h2>
+
+<p>解锁前，安装最新的<a href="https://developer.android.google.cn/studio/run/win-usb">驱动</a>, <a href="https://developer.android.google.cn/studio/releases/platform-tools">ADB</a>, 适合自己手机版本的<a href="https://developers.google.cn/android/images">Image</a>. 以我的Pixel4a(Android12)为例子，打开关于手机-&gt;版本号，可以看到是SP1A.211105.002，所以在官方镜像中找到12.0.0 (SP1A.211105.002.A1, Nov 2021, Verizon, Verizon MVNOs)并下载。在后面root操作中如果刷入不正确的镜像，会导致开机一直卡在loading状态，需要重新刷入正确的boot.img</p>
+
+<h3 id="step1-解锁">Step1 解锁</h3>
+
+<p>将手机连接到电脑，点N次版本号进入开发者模式，然后打开USB调试、OEM解锁。以管理员身份运行ADB工具，输入adb devices命令，如果能看到一个设备，就表示连接成功。如果出现waiting for any device，驱动很有可能没有安装成功。然后输入</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>adb reboot bootloader
+</code></pre></div></div>
+
+<p>手机重启后，在这个界面可以看到 Device is locked，在adb同目录底下有一个fastboot工具，在命令中输入</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>fastboot flashing unlock
+</code></pre></div></div>
+
+<p>用手机操作确认解锁，fastboot reboot 重启手机。再次开机看到warning标志表示解锁成功。</p>
+
+<h3 id="step2-root">Step2 ROOT</h3>
+
+<p>开机后设置可以先跳过，以Step1中同样的方式打开USB调试，安装Magisk，把镜像压缩包中的boot.img找到，放到手机的Download目录中，在Magisk中选择修补的文件，就选Download/boot.img，完成后在Download目录中会生成一个新的文件(magisk_patchedXXXXX.img)，把这个文件拷贝回电脑上的adb工具同目录(或者其他目录应该也可以)</p>
+
+<p>进入Bootloader</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>adb reboot bootloader
+</code></pre></div></div>
+
+<p>例如我的ADB工具包在桌面，那么就用以下命令:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>fastboot flash boot C:<span class="se">\D</span>esktop<span class="se">\a</span>db_tools<span class="se">\m</span>agisk_patchedXXXXX.img
+</code></pre></div></div>
+
+<p>注意，如果镜像包错误，会导致开机一直卡在加载界面，甚至发现加载界面和之前正常的有变化，强制重启后可以看到boot error。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202112131159250.png" alt="image" height="50%" width="50%" /></p>
+
+<p>解决：重新下载正确的包，如果不知道哪个是正确的，之前没注意看版本号，那就一个一个尝试吧(我之前是这样操作的)</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>fastboot flash boot 正确镜像的boot.img
+</code></pre></div></div>
+
+<p>然后再重复之前的步骤。</p>
+
+<h3 id="step3">Step3</h3>
+
+<p>将模块包拷贝到手机上，打开Magisk，安装即可。</p>
+
+<h2 id="参考资料">参考资料</h2>
+
+<p><a href="https://blog.csdn.net/Ender_Zhao/article/details/108659911">https://blog.csdn.net/Ender_Zhao/article/details/108659911</a></p>
+
+<p><a href="https://www.bilibili.com/read/cv11351314">https://www.bilibili.com/read/cv11351314</a></p>
+
+<p><a href="https://sspai.com/post/57924">https://sspai.com/post/57924</a></p>
+
+
+    </section>
+
+    <hr class="stylish"/>
+
+    <section class="pagination">
+      
+      <a class="prev" href="/2020/07/01/mysql_recovery.html">&laquo; MySQL删库后的补救措施</a>
+      
+      
+      <a class="next" href="/2022/03/29/raspberry.html">树莓派搭建个人网盘记录(NextCloud) &raquo;</a>
+      
+    </section>
+
+  </article>
+
+</main>
+
+</div>
+<footer>
+  <hr class="stylish"/>
+  <div>
+    Theme: <a href="https://github.com/abhn/Elementary">Elementary</a>
+    <br/>
+    <a>Jiayu</a> &copy; 2024
+  </div>
+</footer>
+
+  <script src="/assets/main.js"></script>
+
+</body>
+</html>

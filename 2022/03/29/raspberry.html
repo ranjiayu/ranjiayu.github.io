@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="description" content="最近购买了一个树莓派4B来玩耍，以下是一些记录。  树莓派系统安装  在 https://ownyourbits.com/downloads 下载最新的版本并刻录到SD卡。  然后进入到SD卡根目录，创建一个空的ssh文件以及wpa_supplicant.conf。  ctrl_interface=DIR=/va..." />
+  <link rel="canonical" href="/2022/03/29/raspberry.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preload" href="/assets/fonts/open-sans-v17-latin-regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+  <link rel="preload" href="/assets/fonts/open-sans-v17-latin-regular.woff" as="font" type="font/woff" crossorigin="anonymous">
+  <link rel="stylesheet" href="/assets/main.css"/>
+  <link rel="alternate" type="application/rss+xml" title="Jiayu" href="/feed.xml" />
+  <title>树莓派搭建个人网盘记录(NextCloud)</title>
+  
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "author": "",
+        "datePublished": "2022-03-29T19:40:00+08:00",
+        "headline": "树莓派搭建个人网盘记录(NextCloud)",
+        "url": "/2022/03/29/raspberry.html",
+        "inLanguage": "en-US",
+        "isFamilyFriendly": "true",
+        "keywords": "raspberry, hardware",
+        "image": "/favicon.ico",
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": "/2022/03/29/raspberry.html"
+       }
+      }
+    </script>
+  
+</head>
+
+<body>
+<div class="container">
+  <nav class="top-nav">
+  <a class="nav-item" href='/'>Home</a>
+  | <a class="nav-item" href='/tags'>Tags</a>
+  | <a class="nav-item" href='/about'>About</a>
+  | <a class="nav-item" href="/feed.xml">RSS</a>
+  | <a class="nav-item dark-light-switch" href="#"></a>
+</nav>
+
+  <hr class="stylish"/>
+  <div class="_progress-wrapper">
+  <div id="_progress"></div>
+</div>
+
+<header>
+  <h1>树莓派搭建个人网盘记录(NextCloud)</h1>
+  <header class="title-tags">
+    <time datetime="2022-03-29T19:40:00+08:00">29 March, 2022. It was a Tuesday.</time>
+    <div class="tags-container">
+      Posted under <span>
+          
+            <a class="tags" href="/tags#raspberry">raspberry</a>
+          
+            <a class="tags" href="/tags#hardware">hardware</a>
+          
+        </span>
+      &nbsp;
+    </div>
+  </header>
+</header>
+
+<hr class="stylish" />
+
+<main role="main">
+
+  <article>
+
+    <section class="content">
+      <p>最近购买了一个树莓派4B来玩耍，以下是一些记录。</p>
+
+<h2 id="树莓派系统安装">树莓派系统安装</h2>
+
+<p>在 https://ownyourbits.com/downloads 下载最新的版本并刻录到SD卡。</p>
+
+<p>然后进入到SD卡根目录，创建一个空的ssh文件以及wpa_supplicant.conf。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
+network={
+ssid="WiFi账号(中文没测试过)"
+psk="WiFi密码"
+}
+</code></pre></div></div>
+
+<p>使用「Raspberry pi Imager」工具刻录进去，初次开机需要外接显示器和键盘，进行一些基础的设置（修改密码、更换APT源）。</p>
+
+<h2 id="搭建自用网盘nextcloud">搭建自用网盘(Nextcloud)</h2>
+
+<h3 id="外接硬盘">外接硬盘</h3>
+
+<p>家里有闲置的硬盘，那么用来做一个私人网盘非常合适。由于树莓派接入了一个风扇（不可控制，插5V和grd的引脚），再外接硬盘的时候，发现树莓派的网络功能受到极大的影响，经常出现SSH掉线或者ping不通，即使用上了USB HUB单独供电也是这样，所以最后把风扇给去掉了。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202203292104263.jpeg" alt="" height="50%" width="50%" /></p>
+
+<p>将硬盘挂载加入到开机执行，编辑 <strong>/etc/fstab</strong> 文件，加入</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>UUID=硬盘UUID 挂载地址 btrfs(硬盘挂载格式) defaults 0 0
+</code></pre></div></div>
+
+<p>UUID以及格式通过 <strong>sudo blkid</strong> 查看。运行一段时间后发现硬盘出现挂载失败的情况，尚未解决，后面会尝试更换硬盘、自动休眠等方式。</p>
+
+<p>还有可能出现 <strong>Your data directory is not writable</strong>这样的错误，登录到机器上后执行</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ls /media/myCloudDrive
+ls: reading directory '.': Input/output error
+</code></pre></div></div>
+
+<p>暂时不知道原因，重启后解决，猜测是电压、温度等的影响了硬盘的挂载。</p>
+
+<h3 id="nextcloud设置">Nextcloud设置</h3>
+
+<p>由于镜像是装好NextCloud的，所以几乎不需要进行设置，直接打开 http://ip 进行设置，控制面板是 http://ip:4443 。
+注意点：</p>
+
+<ul>
+  <li>Apache运行的用户为www-data，所以需要将存储目录的owner改为www-data，否则会提示权限有关的错误</li>
+  <li>php.ini 中修改xxx_max_size等选项，控制用户最大上传量</li>
+  <li>Apache设置中关闭HTTPS</li>
+</ul>
+
+<h3 id="内网穿透">内网穿透</h3>
+
+<p>在自己家里，连接上Wifi当然可以直接通过IP来访问，如果我人在外面，并且也想在手机上访问我的文件，那么就需要内网穿透，让外网可以访问内网设备。目前主流的方案有：</p>
+
+<ul>
+  <li>frp（需要拥有一台有公网IP的服务器）</li>
+  <li>花生壳、Ngrok（缺点是花生壳要钱而且受到监管，Ngrok绑定自定义域名也需要钱）</li>
+  <li><a href="https://github.com/cloudflare/cloudflared/releases">Cloudflare Tunnel</a></li>
+</ul>
+
+<p>最终我选择使用Cloudflare tunnel。</p>
+
+<p>1.首先下载Cloudflare tunnel客户端，然后创建一个隧道并启动。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202203292102661.png" alt="" height="100%" width="100%" /></p>
+
+<p>2.DNS管理，添加一条CNAME记录，记录值为<strong>tunnel_id.cfargotunnel.com</strong>。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202203292102250.png" alt="" height="100%" width="100%" /></p>
+
+<p>3.Apache中默认是443端口，在 /etc/apache2/sites-available/nextcloud.conf 中，将443改为80，并将SSL相关配置都注释掉。然后到CF后台管理中的SSL一项，选择「灵活」。如果不这么做，会造成无限302重定向。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202203292102496.png" alt="" height="100%" width="100%" /></p>
+
+<p><a href="https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/run-tunnel/as-a-service/linux/">设置为服务自启动</a></p>
+
+<h3 id="监控">监控</h3>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+# 查看CPU温度
+cat /sys/class/thermal/thermal_zone0/temp
+
+# 查看硬盘挂载以及使用情况
+df -h
+
+# 内存使用情况
+cat /proc/meminfo
+
+</code></pre></div></div>
+
+<p>然后可以根据自己的系统写一个脚本，配置定时任务，配置消息推送APP（例如Bark）使得管理员可以随时了解系统运行状况。</p>
+
+<p>参考代码（Python3）：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># coding:utf8
+import subprocess
+
+# Base info
+mount_path = "/media/myCloudDrive"
+drive_capacity = 900
+# thresholds
+temperature_threshold = 55
+mem_threshold = 0.8
+# Bark API url
+bark_api_url = "https://api.day.app/这里换成自己的/"
+
+def send_alarm():
+    pass
+
+
+def check():
+    send_alarm = False
+    # temperature
+    ret = subprocess.getoutput("cat /sys/class/thermal/thermal_zone0/temp")
+    t = int(ret.strip()) / 1000
+    print(t)
+    if t &gt;= temperature_threshold:
+        send_alarm = True
+    # drive
+    ret = subprocess.getoutput("df -h | awk '{print $6}'")
+    drives = str(ret).split("\n")
+    print(drives)
+    drive_status = "正常"
+    if mount_path not in drives:
+        send_alarm = True
+        drive_status = "异常"
+    # memory
+    ret = subprocess.getoutput("cat /proc/meminfo | head -n 2 | awk '{print $2}'")
+    ret = str(ret).split("\n")
+    total = int(ret[0])
+    free = int(ret[1])
+    print("Memory Total: %d, Free: %d" % (total, free,))
+    if  1 - free / total &gt; mem_threshold:
+        send_alarm = True
+    if send_alarm:
+        print("Send an alarm!")
+        info = "温度「%.1f」内存使用率「%.2f」磁盘挂载「%s」" % (t, 1 - free / total, drive_status)
+        print(info)
+        subprocess.getoutput("curl %s%s" % (bark_api_url, info))
+    else:
+        print("The status is ok.")
+
+if __name__ == "__main__":
+    check()
+</code></pre></div></div>
+
+<p>然后添加到crontab，每隔2小时执行一下。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>0 <span class="k">*</span>/2 <span class="k">*</span> <span class="k">*</span> <span class="k">*</span> python /home/pi/monitor.py
+</code></pre></div></div>
+
+<p>参考：</p>
+
+<p><a href="https://luyuhuang.tech/2021/06/27/raspberry-nas.html">用树莓派搭建一个能在外网访问的NAS</a></p>
+
+<p><a href="https://hexo.lzc.app/2019/10/07/%E6%A0%91%E8%8E%93%E6%B4%BE%E9%83%A8%E7%BD%B2NextCloud/">树莓派4B部署NextCloud</a></p>
+
+
+    </section>
+
+    <hr class="stylish"/>
+
+    <section class="pagination">
+      
+      <a class="prev" href="/2021/12/12/pixel4a-root.html">&laquo; Pixel4a破解电信记录</a>
+      
+      
+      <a class="next" href="/2022/04/11/journey-in-datong.html">大同两日游 &raquo;</a>
+      
+    </section>
+
+  </article>
+
+</main>
+
+</div>
+<footer>
+  <hr class="stylish"/>
+  <div>
+    Theme: <a href="https://github.com/abhn/Elementary">Elementary</a>
+    <br/>
+    <a>Jiayu</a> &copy; 2024
+  </div>
+</footer>
+
+  <script src="/assets/main.js"></script>
+
+</body>
+</html>

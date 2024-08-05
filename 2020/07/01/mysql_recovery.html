@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="description" content="备份导出" />
+  <link rel="canonical" href="/2020/07/01/mysql_recovery.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preload" href="/assets/fonts/open-sans-v17-latin-regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+  <link rel="preload" href="/assets/fonts/open-sans-v17-latin-regular.woff" as="font" type="font/woff" crossorigin="anonymous">
+  <link rel="stylesheet" href="/assets/main.css"/>
+  <link rel="alternate" type="application/rss+xml" title="Jiayu" href="/feed.xml" />
+  <title>MySQL删库后的补救措施</title>
+  
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "author": "",
+        "datePublished": "2020-07-01T23:43:00+08:00",
+        "headline": "MySQL删库后的补救措施",
+        "url": "/2020/07/01/mysql_recovery.html",
+        "inLanguage": "en-US",
+        "isFamilyFriendly": "true",
+        "keywords": "mysql",
+        "image": "/favicon.ico",
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": "/2020/07/01/mysql_recovery.html"
+       }
+      }
+    </script>
+  
+</head>
+
+<body>
+<div class="container">
+  <nav class="top-nav">
+  <a class="nav-item" href='/'>Home</a>
+  | <a class="nav-item" href='/tags'>Tags</a>
+  | <a class="nav-item" href='/about'>About</a>
+  | <a class="nav-item" href="/feed.xml">RSS</a>
+  | <a class="nav-item dark-light-switch" href="#"></a>
+</nav>
+
+  <hr class="stylish"/>
+  <div class="_progress-wrapper">
+  <div id="_progress"></div>
+</div>
+
+<header>
+  <h1>MySQL删库后的补救措施</h1>
+  <header class="title-tags">
+    <time datetime="2020-07-01T23:43:00+08:00">1 July, 2020. It was a Wednesday.</time>
+    <div class="tags-container">
+      Posted under <span>
+          
+            <a class="tags" href="/tags#mysql">mysql</a>
+          
+        </span>
+      &nbsp;
+    </div>
+  </header>
+</header>
+
+<hr class="stylish" />
+
+<main role="main">
+
+  <article>
+
+    <section class="content">
+      <p>备份导出</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>mysqldump <span class="nt">-h</span> xxx <span class="nt">-u</span> <span class="nt">-p</span> <span class="nt">--database</span> xxx <span class="o">&gt;</span> ./data.sql
+</code></pre></div></div>
+
+<p>导入的时候没有删除其中的drop table语句。</p>
+
+<p>补救措施：</p>
+
+<ul>
+  <li>bin log</li>
+  <li>general log</li>
+</ul>
+
+<p>如果MySQL配置中开启了binlog，那么会在mysql的目录下产生近期（一般是几天）执行的所有记录。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>./mysqlbinlog --no-defaults --base64-output=decode-rows –v --database db --start-datetime="2020-05-23 00:00:00" --stop-datetime="2020-05-24 00:00:00" mysql-bin.000001 &gt; ./mysql1.sql
+</code></pre></div></div>
+
+<p>通过该命令，导出某binlog指定时间内执行的SQL。如果时间指定的不正确，执行错误的SQL也会在其中。</p>
+
+<p>拿出来后，因为只删除了部分表，用grep解析出需要恢复的那部分数据。</p>
+
+    </section>
+
+    <hr class="stylish"/>
+
+    <section class="pagination">
+      
+      <a class="prev" href="/2020/02/09/ss-server.html">&laquo; SS安装记录</a>
+      
+      
+      <a class="next" href="/2021/12/12/pixel4a-root.html">Pixel4a破解电信记录 &raquo;</a>
+      
+    </section>
+
+  </article>
+
+</main>
+
+</div>
+<footer>
+  <hr class="stylish"/>
+  <div>
+    Theme: <a href="https://github.com/abhn/Elementary">Elementary</a>
+    <br/>
+    <a>Jiayu</a> &copy; 2024
+  </div>
+</footer>
+
+  <script src="/assets/main.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="description" content="本文时间为2017年04月16日，如果微信支付官方文档有变化请注意。" />
+  <link rel="canonical" href="/2017/04/16/about-wechat.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preload" href="/assets/fonts/open-sans-v17-latin-regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+  <link rel="preload" href="/assets/fonts/open-sans-v17-latin-regular.woff" as="font" type="font/woff" crossorigin="anonymous">
+  <link rel="stylesheet" href="/assets/main.css"/>
+  <link rel="alternate" type="application/rss+xml" title="Jiayu" href="/feed.xml" />
+  <title>记录有关微信支付的坑</title>
+  
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "author": "",
+        "datePublished": "2017-04-16T19:41:00+08:00",
+        "headline": "记录有关微信支付的坑",
+        "url": "/2017/04/16/about-wechat.html",
+        "inLanguage": "en-US",
+        "isFamilyFriendly": "true",
+        "keywords": "wechat, payment, 微信支付",
+        "image": "/favicon.ico",
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": "/2017/04/16/about-wechat.html"
+       }
+      }
+    </script>
+  
+</head>
+
+<body>
+<div class="container">
+  <nav class="top-nav">
+  <a class="nav-item" href='/'>Home</a>
+  | <a class="nav-item" href='/tags'>Tags</a>
+  | <a class="nav-item" href='/about'>About</a>
+  | <a class="nav-item" href="/feed.xml">RSS</a>
+  | <a class="nav-item dark-light-switch" href="#"></a>
+</nav>
+
+  <hr class="stylish"/>
+  <div class="_progress-wrapper">
+  <div id="_progress"></div>
+</div>
+
+<header>
+  <h1>记录有关微信支付的坑</h1>
+  <header class="title-tags">
+    <time datetime="2017-04-16T19:41:00+08:00">16 April, 2017. It was a Sunday.</time>
+    <div class="tags-container">
+      Posted under <span>
+          
+            <a class="tags" href="/tags#wechat">wechat</a>
+          
+            <a class="tags" href="/tags#payment">payment</a>
+          
+            <a class="tags" href="/tags#微信支付">微信支付</a>
+          
+        </span>
+      &nbsp;
+    </div>
+  </header>
+</header>
+
+<hr class="stylish" />
+
+<main role="main">
+
+  <article>
+
+    <section class="content">
+      <p>本文时间为2017年04月16日，如果微信支付官方文档有变化请注意。</p>
+
+<p>h5页面用JS调起支付。</p>
+
+<p>文档里面的参数一定要分清楚大小写！有些地方是大写，有些小写，有些又是下划线。真的巨坑</p>
+
+<p>noncestr nonce_str nonceStr</p>
+
+<p>timestamp timeStamp</p>
+
+<h2 id="1微信js-sdk">1.微信JS SDK</h2>
+
+<p><a href="https://mp.weixin.qq.com/wiki/7/aaa137b55fb2e0456bf8dd9148dd613f.html">文档地址</a></p>
+
+<p>有一个坑，因为我是在微信服务号中调用的，有一步需要获取用户的openid，导致最后的url变化为/?code=xxxx&amp;state=xxx。</p>
+
+<p>函数说明：</p>
+
+<p>create_noncestr 生成16位随机字符串</p>
+
+<p>create_timestamp 生成10位时间戳</p>
+
+<p>get_jsapi_ticket 根据 access_token 获取jsapi_ticket</p>
+
+<p>js_url 为<strong>当前</strong>的url！即调用该JS页面的<strong>完整url</strong></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">noncestr</span> <span class="o">=</span> <span class="nf">create_noncestr</span><span class="p">()</span>
+<span class="n">timestamp</span> <span class="o">=</span> <span class="nf">create_timestamp</span><span class="p">()</span>
+<span class="n">jsapi</span> <span class="o">=</span> <span class="nf">get_jsapi_ticket</span><span class="p">()</span>
+<span class="n">js_url</span> <span class="o">=</span> <span class="n">JSAPI_URL</span> <span class="o">+</span> <span class="sh">'</span><span class="s">?code={code}&amp;state={state}</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="n">code</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="n">state</span><span class="p">)</span>
+
+</code></pre></div></div>
+
+<p>开启debug:true，如果提示 “errMsg”:”config ok” 则表示JSSDK初始化成功。(成功提示居然是errMsg。。)</p>
+
+<h2 id="2统一下单">2.统一下单</h2>
+
+<p><a href="https://pay.weixin.qq.com/wiki/doc/api/jsapi.php?chapter=9_1">文档地址</a></p>
+
+<p>坑一：按照文档的步骤走，但是有一点需要注意，文档里面没有<strong>timeStamp</strong>这一项，需要自己加！</p>
+
+<p>坑二：spbill_create_ip</p>
+
+<p>这个参数表示客服端ip，由于我是用Django进行开发，Nginx反向代理，所以这里如果用 request.META[‘REMOTE_ADDR’] 为127.0.0.1</p>
+
+<p>应该使用 request.META[‘HTTP_X_FORWARDED_FOR’].split(‘,’)[0]</p>
+
+<p>坑三：openid 为必填(JS SDK支付为必填)</p>
+
+<p>坑四：openssl 给微信服务器发送xml数据的地址是https，Linux下需要安装一些东西。</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>apt-get <span class="nb">install </span>openssl
+<span class="nb">sudo </span>apt-get <span class="nb">install </span>libssl-dev
+</code></pre></div></div>
+
+<p>拿到 perpay_id 后，里面同时有个sign，注意<em>这个sign不是前端所需要的paySign</em>。</p>
+
+<p>这句话在JS SDK文档里面：</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>paySign 采用统一的微信支付 Sign 签名生成方法，注意这里 appId 也要参与签名，appId 与 config 中传入的 appId 一致，即最后参与签名的参数有appId, timeStamp, nonceStr, package, signType。
+</code></pre></div></div>
+
+<p>用同样的签名方式</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># 拿到prepay_id后继续获取前端所需要的 paySign
+</span><span class="n">d1</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="sh">'</span><span class="s">appId</span><span class="sh">'</span><span class="p">:</span> <span class="n">APP_ID</span><span class="p">,</span>
+    <span class="sh">'</span><span class="s">timeStamp</span><span class="sh">'</span><span class="p">:</span> <span class="mi">2</span><span class="n">步骤发送的timestamp</span><span class="p">,</span>
+    <span class="sh">'</span><span class="s">nonceStr</span><span class="sh">'</span><span class="p">:</span> <span class="mi">2</span><span class="n">步骤返回的nonce_str</span><span class="p">,</span>
+    <span class="sh">'</span><span class="s">package</span><span class="sh">'</span><span class="p">:</span> <span class="sh">'</span><span class="s">prepay_id=</span><span class="sh">'</span><span class="o">+</span> <span class="mi">2</span><span class="n">步骤返回的perpay_id</span><span class="p">,</span>
+    <span class="sh">'</span><span class="s">signType</span><span class="sh">'</span><span class="p">:</span> <span class="sh">'</span><span class="s">MD5</span><span class="sh">'</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="n">s_d1</span> <span class="o">=</span> <span class="sh">'</span><span class="s">&amp;</span><span class="sh">'</span><span class="p">.</span><span class="nf">join</span><span class="p">([</span><span class="sh">'</span><span class="s">%s=%s</span><span class="sh">'</span> <span class="o">%</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">d1</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nf">sorted</span><span class="p">(</span><span class="n">d1</span><span class="p">)])</span>
+<span class="c1"># 这里注意必须在最后加上 &amp;key=商户key(在微信支付商户设置里面设置的32位随机字符串)
+</span><span class="n">s_d1</span> <span class="o">+=</span> <span class="sh">'</span><span class="s">&amp;key={key}</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">API_KEY</span><span class="p">)</span>
+<span class="n">paySign</span> <span class="o">=</span> <span class="n">hashlib</span><span class="p">.</span><span class="nf">md5</span><span class="p">(</span><span class="n">s_d1</span><span class="p">.</span><span class="nf">encode</span><span class="p">(</span><span class="sh">'</span><span class="s">utf-8</span><span class="sh">'</span><span class="p">)).</span><span class="nf">hexdigest</span><span class="p">().</span><span class="nf">upper</span><span class="p">()</span>
+</code></pre></div></div>
+
+<h2 id="3前端调用">3.前端调用</h2>
+
+<p>真的无语，微信官方有两套方法。微信支付有一套，JSSDK里面又有一种。最后用的微信支付文档里面的方法</p>
+
+<p><a href="https://pay.weixin.qq.com/wiki/doc/api/jsapi.php?chapter=7_7&amp;index=6">文档地址</a></p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kd">function</span> <span class="nf">onBridgeReady</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="nx">WeixinJSBridge</span><span class="p">.</span><span class="nf">invoke</span><span class="p">(</span>
+        <span class="dl">'</span><span class="s1">getBrandWCPayRequest</span><span class="dl">'</span><span class="p">,</span> <span class="p">{</span>
+            <span class="dl">"</span><span class="s2">appId</span><span class="dl">"</span><span class="p">:</span><span class="dl">"</span><span class="s2">wx2421b1c4370ec43b</span><span class="dl">"</span><span class="p">,</span>     <span class="c1">//公众号名称，由商户传入     </span>
+            <span class="dl">"</span><span class="s2">timeStamp</span><span class="dl">"</span><span class="p">:</span><span class="dl">"</span><span class="s2">1395712654</span><span class="dl">"</span><span class="p">,</span>         <span class="c1">//时间戳，自1970年以来的秒数     </span>
+            <span class="dl">"</span><span class="s2">nonceStr</span><span class="dl">"</span><span class="p">:</span><span class="dl">"</span><span class="s2">e61463f8efa94090b1f366cccfbbb444</span><span class="dl">"</span><span class="p">,</span> <span class="c1">//随机串     </span>
+            <span class="dl">"</span><span class="s2">package</span><span class="dl">"</span><span class="p">:</span><span class="dl">"</span><span class="s2">prepay_id=u802345jgfjsdfgsdg888</span><span class="dl">"</span><span class="p">,</span>     
+            <span class="dl">"</span><span class="s2">signType</span><span class="dl">"</span><span class="p">:</span><span class="dl">"</span><span class="s2">MD5</span><span class="dl">"</span><span class="p">,</span>         <span class="c1">//微信签名方式：     </span>
+            <span class="dl">"</span><span class="s2">paySign</span><span class="dl">"</span><span class="p">:</span><span class="dl">"</span><span class="s2">70EA570631E4BB79628FBCA90534C63FF7FADD89</span><span class="dl">"</span> <span class="c1">//微信签名 </span>
+        <span class="p">},</span>
+        <span class="nf">function </span><span class="p">(</span><span class="nx">res</span><span class="p">)</span> <span class="p">{</span>     
+            <span class="k">if</span><span class="p">(</span><span class="nx">res</span><span class="p">.</span><span class="nx">err_msg</span> <span class="o">==</span> <span class="dl">"</span><span class="s2">get_brand_wcpay_request:ok</span><span class="dl">"</span> <span class="p">)</span> <span class="p">{}</span>     <span class="c1">// 使用以上方式判断前端返回,微信团队郑重提示：res.err_msg将在用户支付成功后返回    ok，但并不保证它绝对可靠。 </span>
+        <span class="p">}</span>
+    <span class="p">);</span> 
+<span class="p">}</span>
+
+<span class="k">if </span><span class="p">(</span><span class="k">typeof</span> <span class="nx">WeixinJSBridge</span> <span class="o">==</span> <span class="dl">"</span><span class="s2">undefined</span><span class="dl">"</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if </span><span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nb">document</span><span class="p">.</span><span class="nf">addEventListener</span><span class="p">(</span><span class="dl">'</span><span class="s1">WeixinJSBridgeReady</span><span class="dl">'</span><span class="p">,</span> <span class="nx">onBridgeReady</span><span class="p">,</span> <span class="kc">false</span><span class="p">);</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="k">if </span><span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">attachEvent</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nb">document</span><span class="p">.</span><span class="nf">attachEvent</span><span class="p">(</span><span class="dl">'</span><span class="s1">WeixinJSBridgeReady</span><span class="dl">'</span><span class="p">,</span> <span class="nx">onBridgeReady</span><span class="p">);</span> 
+            <span class="nb">document</span><span class="p">.</span><span class="nf">attachEvent</span><span class="p">(</span><span class="dl">'</span><span class="s1">onWeixinJSBridgeReady</span><span class="dl">'</span><span class="p">,</span> <span class="nx">onBridgeReady</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="nf">onBridgeReady</span><span class="p">();</span>
+    <span class="p">}</span>
+
+</code></pre></div></div>
+
+<h2 id="4notify地址返回success或者fail">4.notify地址返回success或者fail</h2>
+
+<p>2017年05月26日补充：这里和之前一样，拿到request.body xml解析后操作，返回也是xml格式。</p>
+
+<p>付款成功后的操作就在这里进行。</p>
+
+<p>##5.需要用到的key/id</p>
+
+<p>1.公众账号ID APPID</p>
+
+<p>2.商户号 mch_id</p>
+
+<p>3.商户key (商户平台后台设置的32位随机字符串)</p>
+
+
+    </section>
+
+    <hr class="stylish"/>
+
+    <section class="pagination">
+      
+      
+      <a class="next" href="/2017/12/31/turbolinks.html">Turbolinks引发的问题 &raquo;</a>
+      
+    </section>
+
+  </article>
+
+</main>
+
+</div>
+<footer>
+  <hr class="stylish"/>
+  <div>
+    Theme: <a href="https://github.com/abhn/Elementary">Elementary</a>
+    <br/>
+    <a>Jiayu</a> &copy; 2024
+  </div>
+</footer>
+
+  <script src="/assets/main.js"></script>
+
+</body>
+</html>

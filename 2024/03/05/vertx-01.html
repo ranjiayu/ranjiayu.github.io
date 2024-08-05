@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="description" content="很久没有写技术相关的内容了。最近在写一个TCPSocket服务器，用于与硬件交互，由于是自定义协议，所以涉及到了一些字节流处理。" />
+  <link rel="canonical" href="/2024/03/05/vertx-01.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preload" href="/assets/fonts/open-sans-v17-latin-regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+  <link rel="preload" href="/assets/fonts/open-sans-v17-latin-regular.woff" as="font" type="font/woff" crossorigin="anonymous">
+  <link rel="stylesheet" href="/assets/main.css"/>
+  <link rel="alternate" type="application/rss+xml" title="Jiayu" href="/feed.xml" />
+  <title>Vert.x 笔记</title>
+  
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "author": "",
+        "datePublished": "2024-03-05T06:46:00+08:00",
+        "headline": "Vert.x 笔记",
+        "url": "/2024/03/05/vertx-01.html",
+        "inLanguage": "en-US",
+        "isFamilyFriendly": "true",
+        "keywords": "journey, travel, life",
+        "image": "/favicon.ico",
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": "/2024/03/05/vertx-01.html"
+       }
+      }
+    </script>
+  
+</head>
+
+<body>
+<div class="container">
+  <nav class="top-nav">
+  <a class="nav-item" href='/'>Home</a>
+  | <a class="nav-item" href='/tags'>Tags</a>
+  | <a class="nav-item" href='/about'>About</a>
+  | <a class="nav-item" href="/feed.xml">RSS</a>
+  | <a class="nav-item dark-light-switch" href="#"></a>
+</nav>
+
+  <hr class="stylish"/>
+  <div class="_progress-wrapper">
+  <div id="_progress"></div>
+</div>
+
+<header>
+  <h1>Vert.x 笔记</h1>
+  <header class="title-tags">
+    <time datetime="2024-03-05T06:46:00+08:00">5 March, 2024. It was a Tuesday.</time>
+    <div class="tags-container">
+      Posted under <span>
+          
+            <a class="tags" href="/tags#journey">journey</a>
+          
+            <a class="tags" href="/tags#travel">travel</a>
+          
+            <a class="tags" href="/tags#life">life</a>
+          
+        </span>
+      &nbsp;
+    </div>
+  </header>
+</header>
+
+<hr class="stylish" />
+
+<main role="main">
+
+  <article>
+
+    <section class="content">
+      <p>很久没有写技术相关的内容了。最近在写一个TCPSocket服务器，用于与硬件交互，由于是自定义协议，所以涉及到了一些字节流处理。</p>
+
+<p>在同事的推荐下使用了Vert.x，以下是一些我的理解和学习笔记。</p>
+
+<h2 id="vertx实例-和-verticle">Vertx实例 和 Verticle</h2>
+
+<p>Vertx实例包括EventBus、Shared Data、Global Session等。</p>
+
+<p>一个Vertx app有两类线程：Eventloop线程、Worker线程。Worker线程用于执行一部分同步代码，Eventloop用于执行verticles。</p>
+
+<p>Verticle可以看作是<strong>一类</strong>线程，一般启动多个Verticle实例来充分发挥多核性能。同一类Verticles可以绑定到同一个端口，参考<a href="https://vertx.io/docs/vertx-core/java/#_scaling_sharing_tcp_servers">官方文档 Scaling - sharing TCP servers</a>。</p>
+
+<p>一个Verticle类可以启动多个实例，N个Verticle被分配到M个eventloop线程上，eventloop线程是Vertx内部自己分配的系统级线程。</p>
+
+<h2 id="异步编程">异步编程</h2>
+
+<p>Vertx的特点，和Nodejs相似。比起Netty这样的框架，需要处理多线程之间的问题，考虑加锁、线程安全问题。由于是<del>单线程</del>Actor模型，基于事件的模型，写的代码不是一个顺序的方式，有一定的上手成本。如果有做过Nodejs开发，那么就非常好理解。和Nodejs一样通过回调或者Promise、Future等方式来书写代码。</p>
+
+<h2 id="verticles-拆分">Verticles 拆分</h2>
+
+<p>既可以按照业务逻辑拆分，也可以按照功能拆分。我的做法是启动了N个TCP Server Verticle（如果只启动一个实例，那么无法充分发挥多核CPU的性能），用于处理Socket连接。启动了Y个线程用于操作数据库/文件的Verticle实例，因为不是所有socket连接都会涉及到相关操作。这需要具体根据业务场景而定。比如在Nodejs中，写代码的时候都是只考虑单线程的逻辑，但是部署的时候可以多进程部署，通过master进程与child进程的通信，来充分利用多核。</p>
+
+<p>很明显，当然也并不是线程数越多越好，默认情况下vertx会启动(CPU数*2)个eventloop线程，如果线程过多反而导致上下文切换的开销不小。</p>
+
+<h2 id="执行同步代码">执行同步代码</h2>
+
+<p>大部分的第三方库都有官方提供的异步实现，比如Redis、MySQL客户端等。没有的可以通过vertx提供的vertx.executeBlocking方法来将同步代码包起来执行，它会自动使用Worker线程去处理。Worker线程通常情况下是不需要手动去启动、处理的。</p>
+
+<h2 id="verticles-通信">Verticles 通信</h2>
+
+<ul>
+  <li>Eventbus，一个vertx实例只有一个eventbus（类似EventEmitter）</li>
+  <li>Shared Data API（异步锁、Map、计数器）</li>
+</ul>
+
+<h2 id="tcp-相关">TCP 相关</h2>
+
+<p>TCP协议已经解决了可靠性和传输有序性的问题，写的时候需要考虑到TCP的数据包是流的形式，比如多个TCP包发过来的时候服务器接受到的可能是一个，可能是多个一起，总之需要在应用层自己处理边界问题。</p>
+
+<p>参考<a href="https://draveness.me/whys-the-design-tcp-message-frame/">为什么 TCP 协议有粘包问题</a>。</p>
+
+<p>常见的分割的方式比如\r\n，定长，协议头写入后续包的长度，参考<a href="https://vertx-china.github.io/docs/vertx-core/java/#_record_parser">官方文档 Record parser</a>，以及参考<a href="https://blog.csdn.net/neosmith/article/details/93724102">Vertx + Protobuf二进制协议解析</a>来实现自定义协议的解析。</p>
+
+<h3 id="buffer">Buffer</h3>
+
+<p>Vertx实现的Buffer类会自动扩容，处理数据也非常的方便。</p>
+
+<p>BTW，一个实用的API：<a href="https://vertx-china.github.io/docs/vertx-core/java/#_event_bus_write_handler">setRegisterWriteHandler</a>，在将应用切分为多个Verticle后，需要在其他的verticle中向socket中写数据时，使用这个API非常方便。</p>
+
+<h2 id="参考资料">参考资料</h2>
+
+<p><a href="https://vertx.io/docs/vertx-core/java/">https://vertx.io/docs/vertx-core/java/</a></p>
+
+<p><a href="https://www.zhihu.com/question/308972356">https://www.zhihu.com/question/308972356</a></p>
+
+<p><a href="https://draveness.me/whys-the-design-tcp-message-frame/">https://draveness.me/whys-the-design-tcp-message-frame/</a></p>
+
+<p><a href="https://blog.csdn.net/neosmith/article/details/93724102">https://blog.csdn.net/neosmith/article/details/93724102</a></p>
+
+    </section>
+
+    <hr class="stylish"/>
+
+    <section class="pagination">
+      
+      <a class="prev" href="/2023/12/23/visit-japan.html">&laquo; 关西之旅</a>
+      
+      
+    </section>
+
+  </article>
+
+</main>
+
+</div>
+<footer>
+  <hr class="stylish"/>
+  <div>
+    Theme: <a href="https://github.com/abhn/Elementary">Elementary</a>
+    <br/>
+    <a>Jiayu</a> &copy; 2024
+  </div>
+</footer>
+
+  <script src="/assets/main.js"></script>
+
+</body>
+</html>

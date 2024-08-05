@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="description" content="记录一下我安装ss-server的过程，忘记的时候可以回来看一下。" />
+  <link rel="canonical" href="/2020/02/09/ss-server.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preload" href="/assets/fonts/open-sans-v17-latin-regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+  <link rel="preload" href="/assets/fonts/open-sans-v17-latin-regular.woff" as="font" type="font/woff" crossorigin="anonymous">
+  <link rel="stylesheet" href="/assets/main.css"/>
+  <link rel="alternate" type="application/rss+xml" title="Jiayu" href="/feed.xml" />
+  <title>SS安装记录</title>
+  
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "author": "",
+        "datePublished": "2020-02-09T14:29:03+08:00",
+        "headline": "SS安装记录",
+        "url": "/2020/02/09/ss-server.html",
+        "inLanguage": "en-US",
+        "isFamilyFriendly": "true",
+        "keywords": "shadowsocks",
+        "image": "/favicon.ico",
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": "/2020/02/09/ss-server.html"
+       }
+      }
+    </script>
+  
+</head>
+
+<body>
+<div class="container">
+  <nav class="top-nav">
+  <a class="nav-item" href='/'>Home</a>
+  | <a class="nav-item" href='/tags'>Tags</a>
+  | <a class="nav-item" href='/about'>About</a>
+  | <a class="nav-item" href="/feed.xml">RSS</a>
+  | <a class="nav-item dark-light-switch" href="#"></a>
+</nav>
+
+  <hr class="stylish"/>
+  <div class="_progress-wrapper">
+  <div id="_progress"></div>
+</div>
+
+<header>
+  <h1>SS安装记录</h1>
+  <header class="title-tags">
+    <time datetime="2020-02-09T14:29:03+08:00">9 February, 2020. It was a Sunday.</time>
+    <div class="tags-container">
+      Posted under <span>
+          
+            <a class="tags" href="/tags#shadowsocks">shadowsocks</a>
+          
+        </span>
+      &nbsp;
+    </div>
+  </header>
+</header>
+
+<hr class="stylish" />
+
+<main role="main">
+
+  <article>
+
+    <section class="content">
+      <p>记录一下我安装ss-server的过程，忘记的时候可以回来看一下。</p>
+
+<p>系统环境：Centos7</p>
+
+<!-- more -->
+
+<h2 id="安装shadowsocks-libev"><strong>安装Shadowsocks-libev</strong></h2>
+
+<p>依赖很多，直接使用一键安装脚本。这里我选择安装在9365端口。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>wget https://down.24kplus.com/linux/shadowsocks/centos-shadowsocks-libev.sh
+<span class="nb">chmod</span> +x centos-shadowsocks-libev.sh <span class="o">&amp;&amp;</span> ./centos-shadowsocks-libev.sh
+</code></pre></div></div>
+
+<p>安装完毕后，运行</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/usr/local/bin/ss-server <span class="nt">-c</span> /etc/shadowsocks-libev/config.json
+</code></pre></div></div>
+
+<p>如果报错，根据错误提示进行。比如我这里就是不支持fast open，去config.json中关闭fast_open就行。</p>
+
+<h2 id="安装simple-obfs"><strong>安装simple-obfs</strong></h2>
+
+<p>用于伪装流量。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>yum <span class="nb">install </span>gcc autoconf libtool automake make zlib-devel openssl-devel asciidoc xmlto libev-devel
+git clone https://github.com/shadowsocks/simple-obfs.git
+<span class="nb">cd </span>simple-obfs
+git submodule update <span class="nt">--init</span> <span class="nt">--recursive</span>
+./autogen.sh
+./configure <span class="o">&amp;&amp;</span> make
+<span class="nb">sudo </span>make <span class="nb">install</span>
+</code></pre></div></div>
+
+<p>启动：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>obfs-server <span class="nt">-s</span> 0.0.0.0 <span class="nt">-p</span> 8888 <span class="nt">--obfs</span> http <span class="nt">-r</span> 127.0.0.1:9365
+</code></pre></div></div>
+
+<p>将obfs启动在8888端口，9365为ss-server的端口。</p>
+
+<h2 id="用nginx做反向代理"><strong>用Nginx做反向代理</strong></h2>
+
+<div class="language-conf highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">server</span> {
+    <span class="n">listen</span> <span class="m">80</span>;
+    <span class="n">root</span> /<span class="n">usr</span>/<span class="n">share</span>/<span class="n">nginx</span>/<span class="n">html</span>;
+
+    <span class="n">location</span> / {
+        <span class="n">proxy_http_version</span> <span class="m">1</span>.<span class="m">1</span>;
+        <span class="n">proxy_set_header</span> <span class="n">Upgrade</span> <span class="s2">"websocket"</span>;
+        <span class="n">proxy_set_header</span> <span class="n">Connection</span> <span class="s2">"upgrade"</span>;
+        <span class="n">if</span> ($<span class="n">http_upgrade</span> = <span class="s2">"websocket"</span>) {
+            <span class="n">proxy_pass</span> <span class="n">http</span>://<span class="m">127</span>.<span class="m">0</span>.<span class="m">0</span>.<span class="m">1</span>:<span class="m">8888</span>;
+        }
+        <span class="n">root</span> /<span class="n">root</span>/<span class="n">webroot</span>;
+        <span class="n">index</span> <span class="n">index</span>.<span class="n">html</span> <span class="n">index</span>.<span class="n">htm</span>;
+        <span class="n">autoindex</span> <span class="n">on</span>;
+        <span class="n">charset</span> <span class="n">utf</span>-<span class="m">8</span>;
+    }
+}
+</code></pre></div></div>
+
+<p>访问80端口时，如果是正常打开网站，则正常访问网站。如果是走的代理(经测试,obfs最新版支持websocket)，则走的8888端口(obfs)。</p>
+
+<p>代理(也在80端口)用的就是websocket那部分流量。</p>
+
+<p>写一点内容到index.html，可以放一点“真实”的内容。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">echo</span> <span class="s2">"I am index"</span> <span class="o">&gt;</span> /root/webroot/index.html<span class="p">;</span>
+</code></pre></div></div>
+
+<h2 id="客户端使用">客户端使用</h2>
+
+<p>端口填写80。</p>
+
+<p>客户端需要搭配 obfs 客户端插件使用。</p>
+
+<p>附：一键安装脚本</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/env bash</span>
+<span class="nv">PATH</span><span class="o">=</span>/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
+<span class="nb">export </span>PATH
+<span class="nb">echo</span> <span class="s2">"#"</span>
+<span class="nb">echo</span> <span class="s2">"# Auto install shadowsocks-libev server"</span>
+<span class="nb">echo</span> <span class="s2">"#"</span>
+<span class="nb">echo</span> <span class="s2">"# Copyright (C) 2019 24K PLUS"</span>
+<span class="nb">echo</span> <span class="s2">"#"</span>
+<span class="nb">echo</span> <span class="s2">"# System Required:  CentOS 7/8"</span>
+<span class="nb">echo</span> <span class="s2">"#"</span>
+<span class="nb">echo</span> <span class="s2">"# Welcome to https://www.24kplus.com"</span>
+<span class="nb">echo</span> <span class="s2">"#"</span>
+
+<span class="nv">red</span><span class="o">=</span><span class="s1">'\033[0;31m'</span>
+<span class="nv">green</span><span class="o">=</span><span class="s1">'\033[0;32m'</span>
+<span class="nv">yellow</span><span class="o">=</span><span class="s1">'\033[0;33m'</span>
+<span class="nv">plain</span><span class="o">=</span><span class="s1">'\033[0m'</span>
+
+<span class="o">[[</span> <span class="nv">$EUID</span> <span class="nt">-ne</span> 0 <span class="o">]]</span> <span class="o">&amp;&amp;</span> <span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"[</span><span class="k">${</span><span class="nv">red</span><span class="k">}</span><span class="s2">Error</span><span class="k">${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">] This script must be run as root!"</span> <span class="o">&amp;&amp;</span> <span class="nb">exit </span>1
+
+<span class="nv">cur_dir</span><span class="o">=</span><span class="si">$(</span> <span class="nb">pwd</span> <span class="si">)</span>
+
+<span class="nv">libtool_file</span><span class="o">=</span><span class="s2">"libtool-2.4.6"</span>
+<span class="nv">libtool_url</span><span class="o">=</span><span class="s2">"https://down.24kplus.com/linux/libtool-2.4.6.tar.gz"</span>
+
+<span class="nv">shadowsocks_libev_config</span><span class="o">=</span><span class="s2">"/etc/shadowsocks-libev/config.json"</span>
+<span class="nv">shadowsocks_libev_service</span><span class="o">=</span><span class="s2">"/etc/systemd/system/shadowsocks-libev.service"</span>
+
+<span class="nv">libsodium_file</span><span class="o">=</span><span class="s2">"libsodium-1.0.18-stable"</span>
+<span class="nv">libsodium_url</span><span class="o">=</span><span class="s2">"https://down.24kplus.com/linux/libsodium-1.0.18-stable.tar.gz"</span>
+
+<span class="nv">mbedtls_file</span><span class="o">=</span><span class="s2">"mbedtls-2.16.3"</span>
+<span class="nv">mbedtls_url</span><span class="o">=</span><span class="s2">"https://down.24kplus.com/linux/mbedtls/mbedtls-2.16.3-gpl.tgz"</span>
+
+<span class="nv">localconf_file</span><span class="o">=</span><span class="s2">"local"</span>
+<span class="nv">localconf_url</span><span class="o">=</span><span class="s2">"https://down.24kplus.com/linux/shadowsocks/local.conf"</span>
+
+<span class="nv">common_ciphers</span><span class="o">=(</span>
+xchacha20-ietf-poly1305
+chacha20-ietf-poly1305
+chacha20
+aes-256-gcm
+aes-256-cfb
+<span class="o">)</span>
+
+install_main<span class="o">(){</span>
+	check_sys
+    install_prepare
+    install_dependencies
+	install_libtool
+	install_mbedtls
+	install_libsodium
+	check_bbr_status
+	<span class="k">if</span> <span class="o">[</span> <span class="nv">$?</span> <span class="nt">-eq</span> 0 <span class="o">]</span><span class="p">;</span> <span class="k">then
+		</span>check_kernel_version
+		<span class="k">if</span> <span class="o">[</span> <span class="nv">$?</span> <span class="nt">-eq</span> 1 <span class="o">]</span><span class="p">;</span> <span class="k">then
+			</span>enable_bbr
+		<span class="k">fi
+	fi
+	</span>optimization_sys_config
+    install_shadowsocks_libev
+	install_completed_libev
+    config_firewall
+    install_cleanup
+<span class="o">}</span>
+
+getversion<span class="o">(){</span>
+	<span class="nb">grep</span> <span class="nt">-oE</span> <span class="s2">"[0-9.]+"</span> /etc/redhat-release
+<span class="o">}</span>
+
+check_sys<span class="o">(){</span>
+	<span class="k">if</span> <span class="o">[</span> <span class="nt">-f</span> /etc/redhat-release <span class="o">]</span><span class="p">;</span> <span class="k">then
+		</span><span class="nb">echo</span> <span class="s2">""</span>
+	<span class="k">else 
+		</span><span class="nb">echo</span> <span class="s2">"Only supported CentOS 7/8."</span>
+		<span class="nb">exit </span>1
+	<span class="k">fi
+	</span><span class="nb">local </span><span class="nv">version</span><span class="o">=</span><span class="s2">"</span><span class="si">$(</span>getversion<span class="si">)</span><span class="s2">"</span>
+    <span class="nv">sys_main_ver</span><span class="o">=</span><span class="k">${</span><span class="nv">version</span><span class="p">%%.*</span><span class="k">}</span>
+	<span class="k">if</span> <span class="o">[</span> <span class="s2">"</span><span class="nv">$sys_main_ver</span><span class="s2">"</span> <span class="o">!=</span> <span class="s1">'7'</span> <span class="o">]</span> <span class="o">&amp;&amp;</span> <span class="o">[</span> <span class="s2">"</span><span class="nv">$sys_main_ver</span><span class="s2">"</span> <span class="o">!=</span> <span class="s1">'8'</span> <span class="o">]</span><span class="p">;</span> <span class="k">then
+		</span><span class="nb">echo</span> <span class="s2">"Only supports CentOS 7/8."</span>
+		<span class="nb">exit </span>1
+	<span class="k">fi</span>
+<span class="o">}</span>
+
+check_kernel_version<span class="o">(){</span>
+	<span class="nv">kernel_version</span><span class="o">=</span><span class="si">$(</span><span class="nb">uname</span> <span class="nt">-r</span> | <span class="nb">awk</span> <span class="nt">-F</span><span class="s1">'.'</span> <span class="s1">'{print $1}'</span><span class="si">)</span>
+	<span class="nv">kernel_main_version</span><span class="o">=</span><span class="si">$(</span><span class="nb">uname</span> <span class="nt">-r</span> | <span class="nb">awk</span> <span class="nt">-F</span><span class="s1">'.'</span> <span class="s1">'{print $2}'</span><span class="si">)</span>
+	<span class="k">if</span> <span class="o">[</span> <span class="nv">$kernel_version</span> <span class="nt">-eq</span> 4 <span class="o">]</span> <span class="o">&amp;&amp;</span> <span class="o">[</span> <span class="nv">$kernel_main_version</span> <span class="nt">-lt</span> 9 <span class="o">]</span><span class="p">;</span> <span class="k">then
+		</span><span class="nb">echo</span> <span class="s2">"Google BBR only supports kernel version 4.9 or higher"</span>
+		<span class="k">return </span>0
+	<span class="k">elif</span> <span class="o">[</span> <span class="nv">$kernel_version</span> <span class="nt">-lt</span> 4 <span class="o">]</span><span class="p">;</span> <span class="k">then
+		</span><span class="nb">echo</span> <span class="s2">"Google BBR only supports kernel version 4.9 or higher"</span>
+		<span class="k">return </span>0
+	<span class="k">fi
+	return </span>1
+<span class="o">}</span>
+
+get_libev_ver<span class="o">(){</span>
+    <span class="nv">libev_ver</span><span class="o">=</span><span class="si">$(</span>wget <span class="nt">--no-check-certificate</span> <span class="nt">-qO-</span> https://api.github.com/repos/shadowsocks/shadowsocks-libev/releases/latest | <span class="nb">grep</span> <span class="s1">'tag_name'</span> | <span class="nb">cut</span> <span class="nt">-d</span><span class="se">\"</span> <span class="nt">-f4</span><span class="si">)</span>
+    <span class="o">[</span> <span class="nt">-z</span> <span class="k">${</span><span class="nv">libev_ver</span><span class="k">}</span> <span class="o">]</span> <span class="o">&amp;&amp;</span> <span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"[</span><span class="k">${</span><span class="nv">red</span><span class="k">}</span><span class="s2">Error</span><span class="k">${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">] Get shadowsocks-libev latest version failed"</span> <span class="o">&amp;&amp;</span> <span class="nb">exit </span>1
+<span class="o">}</span>
+
+download_shadowsocks_libev<span class="o">(){</span>
+    <span class="nb">cd</span> <span class="k">${</span><span class="nv">cur_dir</span><span class="k">}</span>
+
+    get_libev_ver
+    <span class="nv">shadowsocks_libev_file</span><span class="o">=</span><span class="s2">"shadowsocks-libev-</span><span class="si">$(</span><span class="nb">echo</span> <span class="k">${</span><span class="nv">libev_ver</span><span class="k">}</span> | <span class="nb">sed</span> <span class="nt">-e</span> <span class="s1">'s/^[a-zA-Z]//g'</span><span class="si">)</span><span class="s2">"</span>
+    <span class="nb">local </span><span class="nv">shadowsocks_libev_url</span><span class="o">=</span><span class="s2">"https://github.com/shadowsocks/shadowsocks-libev/releases/download/</span><span class="k">${</span><span class="nv">libev_ver</span><span class="k">}</span><span class="s2">/</span><span class="k">${</span><span class="nv">shadowsocks_libev_file</span><span class="k">}</span><span class="s2">.tar.gz"</span>
+
+    download <span class="s2">"</span><span class="k">${</span><span class="nv">shadowsocks_libev_file</span><span class="k">}</span><span class="s2">.tar.gz"</span> <span class="s2">"</span><span class="k">${</span><span class="nv">shadowsocks_libev_url</span><span class="k">}</span><span class="s2">"</span>
+<span class="o">}</span>
+
+download<span class="o">(){</span>
+    <span class="nb">local </span><span class="nv">filename</span><span class="o">=</span><span class="si">$(</span><span class="nb">basename</span> <span class="nv">$1</span><span class="si">)</span>
+    <span class="k">if</span> <span class="o">[</span> <span class="nt">-f</span> <span class="k">${</span><span class="nv">1</span><span class="k">}</span> <span class="o">]</span><span class="p">;</span> <span class="k">then
+        </span><span class="nb">echo</span> <span class="s2">"</span><span class="k">${</span><span class="nv">filename</span><span class="k">}</span><span class="s2"> [found]"</span>
+    <span class="k">else
+        </span><span class="nb">echo</span> <span class="s2">"</span><span class="k">${</span><span class="nv">filename</span><span class="k">}</span><span class="s2"> not found, download now..."</span>
+        wget <span class="nt">--no-check-certificate</span> <span class="nt">-c</span> <span class="nt">-t3</span> <span class="nt">-T60</span> <span class="nt">-O</span> <span class="k">${</span><span class="nv">1</span><span class="k">}</span> <span class="k">${</span><span class="nv">2</span><span class="k">}</span>
+        <span class="k">if</span> <span class="o">[</span> <span class="nv">$?</span> <span class="nt">-ne</span> 0 <span class="o">]</span><span class="p">;</span> <span class="k">then
+            </span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"[</span><span class="k">${</span><span class="nv">red</span><span class="k">}</span><span class="s2">Error</span><span class="k">${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">] Download </span><span class="k">${</span><span class="nv">filename</span><span class="k">}</span><span class="s2"> failed."</span>
+            <span class="nb">exit </span>1
+        <span class="k">fi
+    fi</span>
+<span class="o">}</span>
+install_libtool<span class="o">(){</span>
+    <span class="k">if</span> <span class="o">[</span> <span class="o">!</span> <span class="nt">-f</span> /usr/bin/libtool <span class="o">]</span> <span class="o">&amp;&amp;</span> <span class="o">[</span> <span class="o">!</span> <span class="nt">-f</span> /usr/local/bin/libtool <span class="o">]</span><span class="p">;</span> <span class="k">then
+        </span><span class="nb">cd</span> <span class="k">${</span><span class="nv">cur_dir</span><span class="k">}</span>
+        download <span class="s2">"</span><span class="k">${</span><span class="nv">libtool_file</span><span class="k">}</span><span class="s2">.tar.gz"</span> <span class="s2">"</span><span class="k">${</span><span class="nv">libtool_url</span><span class="k">}</span><span class="s2">"</span>
+        <span class="nb">tar</span> <span class="nt">-zxf</span> <span class="k">${</span><span class="nv">libtool_file</span><span class="k">}</span>.tar.gz
+        <span class="nb">cd</span> <span class="k">${</span><span class="nv">libtool_file</span><span class="k">}</span>
+        ./configure <span class="nt">--prefix</span><span class="o">=</span>/usr <span class="o">&amp;&amp;</span> make <span class="o">&amp;&amp;</span> make <span class="nb">install</span> <span class="o">&amp;&amp;</span> ldconfig
+        <span class="k">if</span> <span class="o">[</span> <span class="nv">$?</span> <span class="nt">-ne</span> 0 <span class="o">]</span><span class="p">;</span> <span class="k">then
+            </span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"[</span><span class="k">${</span><span class="nv">red</span><span class="k">}</span><span class="s2">Error</span><span class="k">${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">] </span><span class="k">${</span><span class="nv">libtool_file</span><span class="k">}</span><span class="s2"> install failed."</span>
+            install_cleanup
+            <span class="nb">exit </span>1
+        <span class="k">fi
+    else
+        </span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"[</span><span class="k">${</span><span class="nv">green</span><span class="k">}</span><span class="s2">Info</span><span class="k">${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">] libtool already installed."</span>
+    <span class="k">fi</span>
+<span class="o">}</span>
+install_libsodium<span class="o">(){</span>
+    <span class="k">if</span> <span class="o">[</span> <span class="o">!</span> <span class="nt">-f</span> /usr/lib/libsodium.a <span class="o">]</span><span class="p">;</span> <span class="k">then
+        </span><span class="nb">cd</span> <span class="k">${</span><span class="nv">cur_dir</span><span class="k">}</span>
+        download <span class="s2">"</span><span class="k">${</span><span class="nv">libsodium_file</span><span class="k">}</span><span class="s2">.tar.gz"</span> <span class="s2">"</span><span class="k">${</span><span class="nv">libsodium_url</span><span class="k">}</span><span class="s2">"</span>
+        <span class="nb">tar</span> <span class="nt">-zxf</span> <span class="k">${</span><span class="nv">libsodium_file</span><span class="k">}</span>.tar.gz
+        <span class="nb">cd </span>libsodium-stable
+        ./configure <span class="nt">--prefix</span><span class="o">=</span>/usr <span class="o">&amp;&amp;</span> make <span class="o">&amp;&amp;</span> make <span class="nb">install</span> <span class="o">&amp;&amp;</span> ldconfig
+        <span class="k">if</span> <span class="o">[</span> <span class="nv">$?</span> <span class="nt">-ne</span> 0 <span class="o">]</span><span class="p">;</span> <span class="k">then
+            </span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"[</span><span class="k">${</span><span class="nv">red</span><span class="k">}</span><span class="s2">Error</span><span class="k">${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">] </span><span class="k">${</span><span class="nv">libsodium_file</span><span class="k">}</span><span class="s2"> install failed."</span>
+            install_cleanup
+            <span class="nb">exit </span>1
+        <span class="k">fi
+    else
+        </span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"[</span><span class="k">${</span><span class="nv">green</span><span class="k">}</span><span class="s2">Info</span><span class="k">${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">] libsodium already installed."</span>
+    <span class="k">fi</span>
+<span class="o">}</span>
+
+install_mbedtls<span class="o">(){</span>
+    <span class="k">if</span> <span class="o">[</span> <span class="o">!</span> <span class="nt">-f</span> /usr/lib/libmbedtls.a <span class="o">]</span> <span class="o">&amp;&amp;</span> <span class="o">[</span> <span class="o">!</span> <span class="nt">-f</span> /usr/bin/mbedtls_hello <span class="o">]</span> <span class="o">&amp;&amp;</span> <span class="o">[</span> <span class="o">!</span> <span class="nt">-f</span> /usr/local/bin/mbedtls_hello <span class="o">]</span><span class="p">;</span> <span class="k">then
+        </span><span class="nb">cd</span> <span class="k">${</span><span class="nv">cur_dir</span><span class="k">}</span>
+        download <span class="s2">"</span><span class="k">${</span><span class="nv">mbedtls_file</span><span class="k">}</span><span class="s2">-gpl.tgz"</span> <span class="s2">"</span><span class="k">${</span><span class="nv">mbedtls_url</span><span class="k">}</span><span class="s2">"</span>
+        <span class="nb">tar</span> <span class="nt">-xf</span> <span class="k">${</span><span class="nv">mbedtls_file</span><span class="k">}</span><span class="nt">-gpl</span>.tgz
+        <span class="nb">cd</span> <span class="k">${</span><span class="nv">mbedtls_file</span><span class="k">}</span>
+        make <span class="o">&amp;&amp;</span> make <span class="nv">DESTDIR</span><span class="o">=</span>/usr <span class="nb">install</span> <span class="o">&amp;&amp;</span> ldconfig
+        <span class="k">if</span> <span class="o">[</span> <span class="nv">$?</span> <span class="nt">-ne</span> 0 <span class="o">]</span><span class="p">;</span> <span class="k">then
+            </span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"[</span><span class="k">${</span><span class="nv">red</span><span class="k">}</span><span class="s2">Error</span><span class="k">${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">] </span><span class="k">${</span><span class="nv">mbedtls_file</span><span class="k">}</span><span class="s2"> install failed."</span>
+            install_cleanup
+            <span class="nb">exit </span>1
+        <span class="k">fi
+    else
+        </span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"[</span><span class="k">${</span><span class="nv">green</span><span class="k">}</span><span class="s2">Info</span><span class="k">${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">] mbedtls already installed."</span>
+    <span class="k">fi</span>
+<span class="o">}</span>
+
+install_shadowsocks_libev<span class="o">(){</span>
+	download_shadowsocks_libev
+    <span class="nb">cd</span> <span class="k">${</span><span class="nv">cur_dir</span><span class="k">}</span>
+    <span class="nb">tar</span> <span class="nt">-zxf</span> <span class="k">${</span><span class="nv">shadowsocks_libev_file</span><span class="k">}</span>.tar.gz
+    <span class="nb">cd</span> <span class="k">${</span><span class="nv">shadowsocks_libev_file</span><span class="k">}</span>
+    ./configure <span class="nt">--disable-documentation</span> <span class="o">&amp;&amp;</span> make <span class="o">&amp;&amp;</span> make <span class="nb">install
+    </span><span class="k">if</span> <span class="o">[</span> <span class="nv">$?</span> <span class="nt">-eq</span> 0 <span class="o">]</span><span class="p">;</span> <span class="k">then
+		</span>config_shadowsocks_libev
+        systemctl start shadowsocks-libev
+		systemctl <span class="nb">enable </span>shadowsocks-libev
+    <span class="k">else
+        </span><span class="nb">echo
+        echo</span> <span class="nt">-e</span> <span class="s2">"[</span><span class="k">${</span><span class="nv">red</span><span class="k">}</span><span class="s2">Error</span><span class="k">${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">] shadowsocks-libev install failed."</span>
+        install_cleanup
+        <span class="nb">exit </span>1
+    <span class="k">fi</span>
+<span class="o">}</span>
+
+install_completed_libev<span class="o">(){</span>
+    clear
+    <span class="nb">echo
+    echo</span> <span class="nt">-e</span> <span class="s2">"Congratulations, shadowsocks-libev server install completed!"</span>
+    <span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"Your Server IP        : </span><span class="k">${</span><span class="nv">red</span><span class="k">}</span><span class="s2"> </span><span class="si">$(</span>get_ip<span class="si">)</span><span class="s2"> </span><span class="k">${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">"</span>
+    <span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"Your Server Port      : </span><span class="k">${</span><span class="nv">red</span><span class="k">}</span><span class="s2"> </span><span class="k">${</span><span class="nv">shadowsocksport</span><span class="k">}</span><span class="s2"> </span><span class="k">${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">"</span>
+    <span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"Your Password         : </span><span class="k">${</span><span class="nv">red</span><span class="k">}</span><span class="s2"> </span><span class="k">${</span><span class="nv">shadowsockspwd</span><span class="k">}</span><span class="s2"> </span><span class="k">${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">"</span>
+    <span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"Your Encryption Method: </span><span class="k">${</span><span class="nv">red</span><span class="k">}</span><span class="s2"> </span><span class="k">${</span><span class="nv">shadowsockscipher</span><span class="k">}</span><span class="s2"> </span><span class="k">${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">"</span>
+<span class="o">}</span>
+
+install_cleanup<span class="o">(){</span>
+    <span class="nb">cd</span> <span class="k">${</span><span class="nv">cur_dir</span><span class="k">}</span>
+    <span class="nb">rm</span> <span class="nt">-rf</span> libsodium-stable <span class="k">${</span><span class="nv">libsodium_file</span><span class="k">}</span>.tar.gz
+    <span class="nb">rm</span> <span class="nt">-rf</span> <span class="k">${</span><span class="nv">mbedtls_file</span><span class="k">}</span> <span class="k">${</span><span class="nv">mbedtls_file</span><span class="k">}</span><span class="nt">-gpl</span>.tgz
+    <span class="nb">rm</span> <span class="nt">-rf</span> <span class="k">${</span><span class="nv">libtool_file</span><span class="k">}</span> <span class="k">${</span><span class="nv">libtool_file</span><span class="k">}</span>.tar.gz
+    <span class="nb">rm</span> <span class="nt">-rf</span> <span class="k">${</span><span class="nv">shadowsocks_libev_file</span><span class="k">}</span> <span class="k">${</span><span class="nv">shadowsocks_libev_file</span><span class="k">}</span>.tar.gz
+<span class="o">}</span>
+
+check_kernel_headers<span class="o">(){</span>
+    <span class="k">if </span>rpm <span class="nt">-qa</span> | <span class="nb">grep</span> <span class="nt">-q</span> headers-<span class="si">$(</span><span class="nb">uname</span> <span class="nt">-r</span><span class="si">)</span><span class="p">;</span> <span class="k">then
+		return </span>0
+	<span class="k">else
+		return </span>1
+	<span class="k">fi</span>
+<span class="o">}</span>
+
+
+config_shadowsocks_libev<span class="o">(){</span>	
+	<span class="k">if</span> <span class="o">[</span> <span class="o">!</span> <span class="nt">-d</span> <span class="s2">"</span><span class="si">$(</span><span class="nb">dirname</span> <span class="k">${</span><span class="nv">shadowsocks_libev_config</span><span class="k">}</span><span class="si">)</span><span class="s2">"</span> <span class="o">]</span><span class="p">;</span> <span class="k">then
+		</span><span class="nb">mkdir</span> <span class="nt">-p</span> <span class="si">$(</span><span class="nb">dirname</span> <span class="k">${</span><span class="nv">shadowsocks_libev_config</span><span class="k">}</span><span class="si">)</span>
+	<span class="k">fi
+
+	</span><span class="nb">cat</span> <span class="o">&gt;</span> <span class="k">${</span><span class="nv">shadowsocks_libev_config</span><span class="k">}</span><span class="o">&lt;&lt;-</span><span class="no">EOF</span><span class="sh">
+	{
+		"server":["[::0]","0.0.0.0"],
+		"server_port":</span><span class="k">${</span><span class="nv">shadowsocksport</span><span class="k">}</span><span class="sh">,
+		"password":"</span><span class="k">${</span><span class="nv">shadowsockspwd</span><span class="k">}</span><span class="sh">",
+		"timeout":600,
+		"method":"</span><span class="k">${</span><span class="nv">shadowsockscipher</span><span class="k">}</span><span class="sh">",
+		"fast_open":true,
+		"mode":"tcp_and_udp"
+	}
+</span><span class="no">	EOF
+	
+</span>	<span class="nb">cat</span> <span class="o">&gt;</span> <span class="k">${</span><span class="nv">shadowsocks_libev_service</span><span class="k">}</span><span class="o">&lt;&lt;-</span><span class="no">EOF</span><span class="sh">
+	[Unit]
+	Description=shadowsocks-libev server
+	After=network.target
+
+	[Service]
+	Type=simple
+	ExecStartPre=/bin/sh -c 'ulimit -n 51200'
+	ExecStart=/usr/local/bin/ss-server -c /etc/shadowsocks-libev/config.json
+	Restart=on-abort
+
+	[Install]
+	WantedBy=multi-user.target
+</span><span class="no">	EOF
+</span><span class="o">}</span>
+
+
+error_detect_depends<span class="o">(){</span>
+    <span class="nb">local command</span><span class="o">=</span><span class="nv">$1</span>
+    <span class="nb">local </span><span class="nv">depend</span><span class="o">=</span><span class="sb">`</span><span class="nb">echo</span> <span class="s2">"</span><span class="k">${</span><span class="nv">command</span><span class="k">}</span><span class="s2">"</span> | <span class="nb">awk</span> <span class="s1">'{print $4}'</span><span class="sb">`</span>
+    <span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"[</span><span class="k">${</span><span class="nv">green</span><span class="k">}</span><span class="s2">Info</span><span class="k">${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">] Starting to install package </span><span class="k">${</span><span class="nv">depend</span><span class="k">}</span><span class="s2">"</span>
+    <span class="k">${</span><span class="nv">command</span><span class="k">}</span> <span class="o">&gt;</span> /dev/null 2&gt;&amp;1
+    <span class="k">if</span> <span class="o">[</span> <span class="nv">$?</span> <span class="nt">-ne</span> 0 <span class="o">]</span><span class="p">;</span> <span class="k">then
+        </span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"[</span><span class="k">${</span><span class="nv">red</span><span class="k">}</span><span class="s2">Error</span><span class="k">${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">] Failed to install </span><span class="k">${</span><span class="nv">red</span><span class="k">}${</span><span class="nv">depend</span><span class="k">}${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">"</span>
+        <span class="nb">exit </span>1
+    <span class="k">fi</span>
+<span class="o">}</span>
+
+install_dependencies<span class="o">(){</span>
+	<span class="nb">local </span><span class="nv">gcc_path</span><span class="o">=</span><span class="si">$(</span><span class="nb">command</span> <span class="nt">-v</span> gcc<span class="si">)</span>
+    <span class="k">if</span> <span class="o">[</span> <span class="s2">"</span><span class="k">${</span><span class="nv">gcc_path</span><span class="k">}</span><span class="s2">"</span> <span class="o">==</span> <span class="s2">""</span> <span class="o">]</span><span class="p">;</span> <span class="k">then
+		</span>error_detect_depends <span class="s2">"yum -y install gcc"</span>
+	<span class="k">fi
+    </span><span class="nv">yum_depends</span><span class="o">=(</span>
+		gettext autoconf automake make pcre-devel asciidoc xmlto c-ares-devel libev-devel wget <span class="nb">tar </span>m4 perl
+	<span class="o">)</span>
+	<span class="k">for </span>depend <span class="k">in</span> <span class="k">${</span><span class="nv">yum_depends</span><span class="p">[@]</span><span class="k">}</span><span class="p">;</span> <span class="k">do
+		</span>error_detect_depends <span class="s2">"yum -y install </span><span class="k">${</span><span class="nv">depend</span><span class="k">}</span><span class="s2">"</span>
+	<span class="k">done
+	
+	if</span> <span class="o">[</span> <span class="s2">"</span><span class="nv">$sys_main_ver</span><span class="s2">"</span> <span class="o">==</span> <span class="s1">'8'</span> <span class="o">]</span><span class="p">;</span> <span class="k">then
+		</span>install_python2
+	<span class="k">fi</span>
+<span class="o">}</span>
+
+install_python2<span class="o">(){</span>
+	<span class="k">if</span> <span class="o">[</span> <span class="o">!</span> <span class="nt">-f</span> /usr/lib64/libpython2.7.so.1.0 <span class="o">]</span><span class="p">;</span> <span class="k">then
+		</span>error_detect_depends <span class="s2">"yum -y install python2"</span>
+	<span class="k">fi</span>
+<span class="o">}</span>
+
+config_firewall<span class="o">(){</span>
+    systemctl status firewalld <span class="o">&gt;</span> /dev/null 2&gt;&amp;1
+	<span class="k">if</span> <span class="o">[</span> <span class="nv">$?</span> <span class="nt">-eq</span> 0 <span class="o">]</span><span class="p">;</span> <span class="k">then
+		</span><span class="nv">default_zone</span><span class="o">=</span><span class="si">$(</span>firewall-cmd <span class="nt">--get-default-zone</span><span class="si">)</span>
+		firewall-cmd <span class="nt">--permanent</span> <span class="nt">--zone</span><span class="o">=</span><span class="k">${</span><span class="nv">default_zone</span><span class="k">}</span> <span class="nt">--add-port</span><span class="o">=</span><span class="k">${</span><span class="nv">shadowsocksport</span><span class="k">}</span>/tcp
+		firewall-cmd <span class="nt">--permanent</span> <span class="nt">--zone</span><span class="o">=</span><span class="k">${</span><span class="nv">default_zone</span><span class="k">}</span> <span class="nt">--add-port</span><span class="o">=</span><span class="k">${</span><span class="nv">shadowsocksport</span><span class="k">}</span>/udp
+		firewall-cmd <span class="nt">--reload</span>
+	<span class="k">else
+		</span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"[</span><span class="k">${</span><span class="nv">yellow</span><span class="k">}</span><span class="s2">Warning</span><span class="k">${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">] firewalld looks like not running or not installed, please enable port </span><span class="k">${</span><span class="nv">shadowsocksport</span><span class="k">}</span><span class="s2"> manually if necessary."</span>
+	<span class="k">fi</span>
+<span class="o">}</span>
+
+install_prepare_port<span class="o">()</span> <span class="o">{</span>
+    <span class="k">while </span><span class="nb">true
+    </span><span class="k">do
+    </span><span class="nv">dport</span><span class="o">=</span><span class="si">$(</span><span class="nb">shuf</span> <span class="nt">-i</span> 9000-19999 <span class="nt">-n</span> 1<span class="si">)</span>
+    <span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"Please enter a port for shadowsocks-libev [1-65535]"</span>
+    <span class="nb">read</span> <span class="nt">-p</span> <span class="s2">"(Default port: </span><span class="k">${</span><span class="nv">dport</span><span class="k">}</span><span class="s2">):"</span> shadowsocksport
+    <span class="o">[</span> <span class="nt">-z</span> <span class="s2">"</span><span class="k">${</span><span class="nv">shadowsocksport</span><span class="k">}</span><span class="s2">"</span> <span class="o">]</span> <span class="o">&amp;&amp;</span> <span class="nv">shadowsocksport</span><span class="o">=</span><span class="k">${</span><span class="nv">dport</span><span class="k">}</span>
+    <span class="nb">expr</span> <span class="k">${</span><span class="nv">shadowsocksport</span><span class="k">}</span> + 1 &amp;&gt;/dev/null
+    <span class="k">if</span> <span class="o">[</span> <span class="nv">$?</span> <span class="nt">-eq</span> 0 <span class="o">]</span><span class="p">;</span> <span class="k">then
+        if</span> <span class="o">[</span> <span class="k">${</span><span class="nv">shadowsocksport</span><span class="k">}</span> <span class="nt">-ge</span> 1 <span class="o">]</span> <span class="o">&amp;&amp;</span> <span class="o">[</span> <span class="k">${</span><span class="nv">shadowsocksport</span><span class="k">}</span> <span class="nt">-le</span> 65535 <span class="o">]</span> <span class="o">&amp;&amp;</span> <span class="o">[</span> <span class="k">${</span><span class="nv">shadowsocksport</span>:0:1<span class="k">}</span> <span class="o">!=</span> 0 <span class="o">]</span><span class="p">;</span> <span class="k">then
+            </span><span class="nb">echo
+            echo</span> <span class="s2">"port = </span><span class="k">${</span><span class="nv">shadowsocksport</span><span class="k">}</span><span class="s2">"</span>
+            <span class="nb">echo
+            break
+        </span><span class="k">fi
+    fi
+    </span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"[</span><span class="k">${</span><span class="nv">red</span><span class="k">}</span><span class="s2">Error</span><span class="k">${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">] Please enter a correct number [1-65535]"</span>
+    <span class="k">done</span>
+<span class="o">}</span>
+
+install_prepare_password<span class="o">(){</span>
+	<span class="nb">local </span><span class="nv">mkpasswd_path</span><span class="o">=</span><span class="si">$(</span><span class="nb">command</span> <span class="nt">-v</span> mkpasswd<span class="si">)</span>
+    <span class="k">if</span> <span class="o">[</span> <span class="s2">"</span><span class="k">${</span><span class="nv">mkpasswd_path</span><span class="k">}</span><span class="s2">"</span> <span class="o">==</span> <span class="s2">""</span> <span class="o">]</span><span class="p">;</span> <span class="k">then
+		</span>error_detect_depends <span class="s2">"yum -y install expect"</span>
+	<span class="k">fi
+	</span><span class="nv">radompassword</span><span class="o">=</span><span class="si">$(</span>mkpasswd <span class="nt">-l</span> 18 <span class="nt">-d</span> 2 <span class="nt">-s</span> 4<span class="si">)</span>
+
+    <span class="nb">echo</span> <span class="s2">"Please enter password for shadowsocks-libev"</span>
+    <span class="nb">read</span> <span class="nt">-p</span> <span class="s2">"(Default password: </span><span class="k">${</span><span class="nv">radompassword</span><span class="k">}</span><span class="s2">):"</span> shadowsockspwd
+    <span class="o">[</span> <span class="nt">-z</span> <span class="s2">"</span><span class="k">${</span><span class="nv">shadowsockspwd</span><span class="k">}</span><span class="s2">"</span> <span class="o">]</span> <span class="o">&amp;&amp;</span> <span class="nv">shadowsockspwd</span><span class="o">=</span><span class="k">${</span><span class="nv">radompassword</span><span class="k">}</span>
+    <span class="nb">echo
+    echo</span> <span class="s2">"password = </span><span class="k">${</span><span class="nv">shadowsockspwd</span><span class="k">}</span><span class="s2">"</span>
+    <span class="nb">echo</span>
+<span class="o">}</span>
+
+install_prepare_cipher<span class="o">(){</span>
+    <span class="k">while </span><span class="nb">true
+    </span><span class="k">do
+    </span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"Please select stream cipher for shadowsocks-libev:"</span>
+
+	<span class="k">for</span> <span class="o">((</span><span class="nv">i</span><span class="o">=</span>1<span class="p">;</span>i&lt;<span class="o">=</span><span class="k">${#</span><span class="nv">common_ciphers</span><span class="p">[@]</span><span class="k">}</span><span class="p">;</span>i++ <span class="o">))</span><span class="p">;</span> <span class="k">do
+		</span><span class="nv">hint</span><span class="o">=</span><span class="s2">"</span><span class="k">${</span><span class="nv">common_ciphers</span><span class="p">[</span><span class="nv">$i</span><span class="p">-1]</span><span class="k">}</span><span class="s2">"</span>
+		<span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"</span><span class="k">${</span><span class="nv">green</span><span class="k">}${</span><span class="nv">i</span><span class="k">}${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">) </span><span class="k">${</span><span class="nv">hint</span><span class="k">}</span><span class="s2">"</span>
+	<span class="k">done
+	</span><span class="nb">read</span> <span class="nt">-p</span> <span class="s2">"Which cipher you'd select(Default: </span><span class="k">${</span><span class="nv">common_ciphers</span><span class="p">[0]</span><span class="k">}</span><span class="s2">):"</span> pick
+	<span class="o">[</span> <span class="nt">-z</span> <span class="s2">"</span><span class="nv">$pick</span><span class="s2">"</span> <span class="o">]</span> <span class="o">&amp;&amp;</span> <span class="nv">pick</span><span class="o">=</span>1
+	<span class="nb">expr</span> <span class="k">${</span><span class="nv">pick</span><span class="k">}</span> + 1 &amp;&gt;/dev/null
+	<span class="k">if</span> <span class="o">[</span> <span class="nv">$?</span> <span class="nt">-ne</span> 0 <span class="o">]</span><span class="p">;</span> <span class="k">then
+		</span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"[</span><span class="k">${</span><span class="nv">red</span><span class="k">}</span><span class="s2">Error</span><span class="k">${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">] Please enter a number"</span>
+		<span class="k">continue
+	fi
+	if</span> <span class="o">[[</span> <span class="s2">"</span><span class="nv">$pick</span><span class="s2">"</span> <span class="nt">-lt</span> 1 <span class="o">||</span> <span class="s2">"</span><span class="nv">$pick</span><span class="s2">"</span> <span class="nt">-gt</span> <span class="k">${#</span><span class="nv">common_ciphers</span><span class="p">[@]</span><span class="k">}</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then
+		</span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"[</span><span class="k">${</span><span class="nv">red</span><span class="k">}</span><span class="s2">Error</span><span class="k">${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">] Please enter a number between 1 and </span><span class="k">${#</span><span class="nv">common_ciphers</span><span class="p">[@]</span><span class="k">}</span><span class="s2">"</span>
+		<span class="k">continue
+	fi
+	</span><span class="nv">shadowsockscipher</span><span class="o">=</span><span class="k">${</span><span class="nv">common_ciphers</span><span class="p">[</span><span class="nv">$pick</span><span class="p">-1]</span><span class="k">}</span>
+    
+   
+
+    <span class="nb">echo
+    echo</span> <span class="s2">"cipher = </span><span class="k">${</span><span class="nv">shadowsockscipher</span><span class="k">}</span><span class="s2">"</span>
+    <span class="nb">echo
+    break
+    </span><span class="k">done</span>
+<span class="o">}</span>
+
+check_bbr_status<span class="o">()</span> <span class="o">{</span>
+    <span class="nb">local </span><span class="nv">param</span><span class="o">=</span><span class="si">$(</span>lsmod | <span class="nb">grep </span>bbr | <span class="nb">awk</span> <span class="s1">'{print $1}'</span><span class="si">)</span>
+    <span class="k">if</span> <span class="o">[[</span> <span class="s2">"</span><span class="k">${</span><span class="nv">param</span><span class="k">}</span><span class="s2">"</span> <span class="o">==</span> <span class="s2">"tcp_bbr"</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then
+		</span><span class="nb">echo</span> <span class="s2">"[</span><span class="k">${</span><span class="nv">green</span><span class="k">}</span><span class="s2">Info</span><span class="k">${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">] Your Google BBR enabled"</span>
+        <span class="k">return </span>1
+    <span class="k">else
+        return </span>0
+    <span class="k">fi</span>
+<span class="o">}</span>
+
+enable_bbr<span class="o">()</span> <span class="o">{</span>
+	modprobe tcp_bbr
+    <span class="nb">echo</span> <span class="s2">"tcp_bbr"</span> <span class="o">&gt;&gt;</span> /etc/modules-load.d/modules.conf
+    <span class="nb">echo</span> <span class="s2">"net.core.default_qdisc = fq"</span> <span class="o">&gt;&gt;</span> /etc/sysctl.conf
+    <span class="nb">echo</span> <span class="s2">"net.ipv4.tcp_congestion_control = bbr"</span> <span class="o">&gt;&gt;</span> /etc/sysctl.conf
+    sysctl <span class="nt">-p</span>
+	<span class="nb">echo</span> <span class="s2">"[</span><span class="k">${</span><span class="nv">green</span><span class="k">}</span><span class="s2">Info</span><span class="k">${</span><span class="nv">plain</span><span class="k">}</span><span class="s2">] Google BBR enabled"</span>
+<span class="o">}</span>
+
+optimization_sys_config<span class="o">(){</span>
+	<span class="nb">cd</span> <span class="k">${</span><span class="nv">cur_dir</span><span class="k">}</span>
+	<span class="k">if</span> <span class="o">[</span> <span class="o">!</span> <span class="nt">-f</span> /etc/sysctl.d/local.conf <span class="o">]</span><span class="p">;</span> <span class="k">then
+		</span>download <span class="s2">"</span><span class="k">${</span><span class="nv">localconf_file</span><span class="k">}</span><span class="s2">.conf"</span> <span class="s2">"</span><span class="k">${</span><span class="nv">localconf_url</span><span class="k">}</span><span class="s2">"</span>
+		<span class="nb">mv</span> <span class="k">${</span><span class="nv">localconf_file</span><span class="k">}</span>.conf /etc/sysctl.d/local.conf
+		sysctl <span class="nt">--system</span>	
+	<span class="k">fi
+	if</span> <span class="o">[</span> <span class="s2">"</span><span class="si">$(</span><span class="nb">grep</span> <span class="s2">"* soft nofile"</span> /etc/security/limits.conf<span class="si">)</span><span class="s2">"</span> <span class="o">==</span> <span class="s2">""</span> <span class="o">]</span><span class="p">;</span> <span class="k">then
+		</span><span class="nb">echo</span> <span class="s2">"* soft nofile 51200"</span> <span class="o">&gt;&gt;</span> /etc/security/limits.conf
+	<span class="k">fi
+	if</span> <span class="o">[</span> <span class="s2">"</span><span class="si">$(</span><span class="nb">grep</span> <span class="s2">"* hard nofile"</span> /etc/security/limits.conf<span class="si">)</span><span class="s2">"</span> <span class="o">==</span> <span class="s2">""</span> <span class="o">]</span><span class="p">;</span> <span class="k">then
+		</span><span class="nb">echo</span> <span class="s2">"* hard nofile 51200"</span> <span class="o">&gt;&gt;</span> /etc/security/limits.conf
+	<span class="k">fi</span>
+<span class="o">}</span>
+
+get_ip<span class="o">(){</span>
+    <span class="nb">local </span><span class="nv">IP</span><span class="o">=</span><span class="si">$(</span> ip addr | egrep <span class="nt">-o</span> <span class="s1">'[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}'</span> | egrep <span class="nt">-v</span> <span class="s2">"^192</span><span class="se">\.</span><span class="s2">168|^172</span><span class="se">\.</span><span class="s2">1[6-9]</span><span class="se">\.</span><span class="s2">|^172</span><span class="se">\.</span><span class="s2">2[0-9]</span><span class="se">\.</span><span class="s2">|^172</span><span class="se">\.</span><span class="s2">3[0-2]</span><span class="se">\.</span><span class="s2">|^10</span><span class="se">\.</span><span class="s2">|^127</span><span class="se">\.</span><span class="s2">|^255</span><span class="se">\.</span><span class="s2">|^0</span><span class="se">\.</span><span class="s2">"</span> | <span class="nb">head</span> <span class="nt">-n</span> 1 <span class="si">)</span>
+    <span class="o">[</span> <span class="nt">-z</span> <span class="k">${</span><span class="nv">IP</span><span class="k">}</span> <span class="o">]</span> <span class="o">&amp;&amp;</span> <span class="nv">IP</span><span class="o">=</span><span class="si">$(</span> wget <span class="nt">-qO-</span> <span class="nt">-t1</span> <span class="nt">-T2</span> api.24kplus.com/myip <span class="si">)</span>
+    <span class="nb">echo</span> <span class="k">${</span><span class="nv">IP</span><span class="k">}</span>
+<span class="o">}</span>
+
+get_char<span class="o">(){</span>
+    <span class="nv">SAVEDSTTY</span><span class="o">=</span><span class="si">$(</span><span class="nb">stty</span> <span class="nt">-g</span><span class="si">)</span>
+    <span class="nb">stty</span> <span class="nt">-echo</span>
+    <span class="nb">stty </span>cbreak
+    <span class="nb">dd </span><span class="k">if</span><span class="o">=</span>/dev/tty <span class="nv">bs</span><span class="o">=</span>1 <span class="nv">count</span><span class="o">=</span>1 2&gt; /dev/null
+    <span class="nb">stty</span> <span class="nt">-raw</span>
+    <span class="nb">stty echo
+    stty</span> <span class="nv">$SAVEDSTTY</span>
+<span class="o">}</span>
+
+install_prepare<span class="o">(){</span>
+
+    install_prepare_password
+    install_prepare_port
+    install_prepare_cipher
+
+    <span class="nb">echo
+    echo</span> <span class="s2">"Press any key to start...or Press Ctrl+C to cancel"</span>
+    <span class="nv">char</span><span class="o">=</span><span class="sb">`</span>get_char<span class="sb">`</span>
+
+<span class="o">}</span>
+
+install_main
+</code></pre></div></div>
+
+    </section>
+
+    <hr class="stylish"/>
+
+    <section class="pagination">
+      
+      <a class="prev" href="/2018/10/20/cookie-session-jwt.html">&laquo; Cookie/Session/JWT</a>
+      
+      
+      <a class="next" href="/2020/07/01/mysql_recovery.html">MySQL删库后的补救措施 &raquo;</a>
+      
+    </section>
+
+  </article>
+
+</main>
+
+</div>
+<footer>
+  <hr class="stylish"/>
+  <div>
+    Theme: <a href="https://github.com/abhn/Elementary">Elementary</a>
+    <br/>
+    <a>Jiayu</a> &copy; 2024
+  </div>
+</footer>
+
+  <script src="/assets/main.js"></script>
+
+</body>
+</html>

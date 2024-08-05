@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="description" content="一开始使用Rails的时候，我就很好奇：a链接跳转的时候Chrome F12打开审核工具，发现只是资源请求，页面并没有实际的跳转，类似SPA。后来才知道是由于Turbolink。" />
+  <link rel="canonical" href="/2017/12/31/turbolinks.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preload" href="/assets/fonts/open-sans-v17-latin-regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+  <link rel="preload" href="/assets/fonts/open-sans-v17-latin-regular.woff" as="font" type="font/woff" crossorigin="anonymous">
+  <link rel="stylesheet" href="/assets/main.css"/>
+  <link rel="alternate" type="application/rss+xml" title="Jiayu" href="/feed.xml" />
+  <title>Turbolinks引发的问题</title>
+  
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "author": "",
+        "datePublished": "2017-12-31T19:40:00+08:00",
+        "headline": "Turbolinks引发的问题",
+        "url": "/2017/12/31/turbolinks.html",
+        "inLanguage": "en-US",
+        "isFamilyFriendly": "true",
+        "keywords": "Rails, turbolinks",
+        "image": "/favicon.ico",
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": "/2017/12/31/turbolinks.html"
+       }
+      }
+    </script>
+  
+</head>
+
+<body>
+<div class="container">
+  <nav class="top-nav">
+  <a class="nav-item" href='/'>Home</a>
+  | <a class="nav-item" href='/tags'>Tags</a>
+  | <a class="nav-item" href='/about'>About</a>
+  | <a class="nav-item" href="/feed.xml">RSS</a>
+  | <a class="nav-item dark-light-switch" href="#"></a>
+</nav>
+
+  <hr class="stylish"/>
+  <div class="_progress-wrapper">
+  <div id="_progress"></div>
+</div>
+
+<header>
+  <h1>Turbolinks引发的问题</h1>
+  <header class="title-tags">
+    <time datetime="2017-12-31T19:40:00+08:00">31 December, 2017. It was a Sunday.</time>
+    <div class="tags-container">
+      Posted under <span>
+          
+            <a class="tags" href="/tags#Rails">Rails</a>
+          
+            <a class="tags" href="/tags#turbolinks">turbolinks</a>
+          
+        </span>
+      &nbsp;
+    </div>
+  </header>
+</header>
+
+<hr class="stylish" />
+
+<main role="main">
+
+  <article>
+
+    <section class="content">
+      <p>一开始使用Rails的时候，我就很好奇：a链接跳转的时候Chrome F12打开审核工具，发现只是资源请求，页面并没有实际的跳转，类似SPA。后来才知道是由于<a href="https://github.com/turbolinks/turbolinks">Turbolink</a>。</p>
+
+<p>其中的坑在Rails文档里面也说了，很多JS以前用$(docuemnt).ready()的地方要改成监听 “turbolinks:load” 事件。</p>
+
+<!-- more -->
+
+<p>以下为转载内容：</p>
+
+<p>正常加载页面顺序：</p>
+
+<p>1.下载 index.html</p>
+
+<p>2.解析 head 标签中的 link 与 script 标签, 如果是带有 src 属性, 阻塞其他逻辑执行, 继续去下载对应的资源并执行. 如果没带, 则直接执行其中的代码逻辑.</p>
+
+<p>3.渲染 body 标签的内容, 并解析执行 body 中的 script 标签.</p>
+
+<p>4.全部执行完毕, 执行 DOMContentLoaded 事件绑定的逻辑.</p>
+
+<p>5.第一次加载时网页执行跟上述是一致, 之后 Turbolinks 会绑定 Body 下所有的 a 元素的 click 事件, 切换页面时, Turbolinks 将会接管浏览器的页面加载过程, 采用以下方式:</p>
+
+<p>Turbolinks：</p>
+
+<p>1.异步加载新页面的 index.html</p>
+
+<p>2.解析 head 标签中的 link 与 script 标签, 识别其中带有 data-turbolinks-track 的属性, 如果 src 有变化( 可能性很小 ), 则重载所有页面. 如果没有变化, 则不进行任何操作.</p>
+
+<p>3.解析 head 标签中新的 link 与 script 标签, 加载并执行.</p>
+
+<p>4.用新页面的 body 替换老的 body 中的内容, 并执行其中的 script 脚本.</p>
+
+<p><a href="http://yafeilee.me/blogs/88">Turbolinks5 概述及实现原理</a></p>
+
+<p><a href="http://railsfun.tw/t/turbolinks/610">turbolinks 實際利弊</a></p>
+
+    </section>
+
+    <hr class="stylish"/>
+
+    <section class="pagination">
+      
+      <a class="prev" href="/2017/04/16/about-wechat.html">&laquo; 记录有关微信支付的坑</a>
+      
+      
+      <a class="next" href="/2018/02/15/mini-program-game.html">开发微信小程序答题游戏记录 &raquo;</a>
+      
+    </section>
+
+  </article>
+
+</main>
+
+</div>
+<footer>
+  <hr class="stylish"/>
+  <div>
+    Theme: <a href="https://github.com/abhn/Elementary">Elementary</a>
+    <br/>
+    <a>Jiayu</a> &copy; 2024
+  </div>
+</footer>
+
+  <script src="/assets/main.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="description" content="在开发微信小程序答题游戏后端的时候，遇到了很多坑。" />
+  <link rel="canonical" href="/2018/02/15/mini-program-game.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preload" href="/assets/fonts/open-sans-v17-latin-regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+  <link rel="preload" href="/assets/fonts/open-sans-v17-latin-regular.woff" as="font" type="font/woff" crossorigin="anonymous">
+  <link rel="stylesheet" href="/assets/main.css"/>
+  <link rel="alternate" type="application/rss+xml" title="Jiayu" href="/feed.xml" />
+  <title>开发微信小程序答题游戏记录</title>
+  
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "author": "",
+        "datePublished": "2018-02-15T11:11:00+08:00",
+        "headline": "开发微信小程序答题游戏记录",
+        "url": "/2018/02/15/mini-program-game.html",
+        "inLanguage": "en-US",
+        "isFamilyFriendly": "true",
+        "keywords": "小程序, wechat, 微信",
+        "image": "/favicon.ico",
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": "/2018/02/15/mini-program-game.html"
+       }
+      }
+    </script>
+  
+</head>
+
+<body>
+<div class="container">
+  <nav class="top-nav">
+  <a class="nav-item" href='/'>Home</a>
+  | <a class="nav-item" href='/tags'>Tags</a>
+  | <a class="nav-item" href='/about'>About</a>
+  | <a class="nav-item" href="/feed.xml">RSS</a>
+  | <a class="nav-item dark-light-switch" href="#"></a>
+</nav>
+
+  <hr class="stylish"/>
+  <div class="_progress-wrapper">
+  <div id="_progress"></div>
+</div>
+
+<header>
+  <h1>开发微信小程序答题游戏记录</h1>
+  <header class="title-tags">
+    <time datetime="2018-02-15T11:11:00+08:00">15 February, 2018. It was a Thursday.</time>
+    <div class="tags-container">
+      Posted under <span>
+          
+            <a class="tags" href="/tags#小程序">小程序</a>
+          
+            <a class="tags" href="/tags#wechat">wechat</a>
+          
+            <a class="tags" href="/tags#微信">微信</a>
+          
+        </span>
+      &nbsp;
+    </div>
+  </header>
+</header>
+
+<hr class="stylish" />
+
+<main role="main">
+
+  <article>
+
+    <section class="content">
+      <p>在开发微信小程序答题游戏后端的时候，遇到了很多坑。</p>
+
+<ol>
+  <li>
+    <p>Supervisor 环境变量需要在ini里面手动设置。</p>
+  </li>
+  <li>
+    <p>用root运行Celery，建立Celery实例的时候 platforms.C_FORCE_ROOT = True 。</p>
+  </li>
+  <li>
+    <p>Celery和Django结合：http://docs.jinkan.org/docs/celery/django/first-steps-with-django.html#using-celery-with-django 。</p>
+  </li>
+  <li>
+    <p>Celery多任务默认是会阻塞的，使用 -P eventlet(并发模式) -c [线程数] 开启并发。</p>
+  </li>
+  <li>
+    <p>Django Model的DateTimeField 类型在数据库中的时候为UTC时区，取出后实例中时为当前时区。</p>
+  </li>
+  <li>
+    <p>微信小程序推送的实现</p>
+  </li>
+</ol>
+
+<p>主要说一下推送：</p>
+
+<p>之前有个接口需要频繁地调用，所以采取了通过Websocket事件通知的形式来减少请求数量。</p>
+
+<p>小程序端直接调用Websocket接口就行了，后端我是用Django写的，但是感觉Django channels和Django耦合度较高</p>
+
+<p>所以我采用了Tornado，跑在另外的端口，请求通过Nginx转发，注意Nginx配置里面 proxy_set_header Connection “upgrade”; 开启支持Websocket。这里为了不阻塞其他Websocket请求，使用异步的Redis库：tornado-redis。</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># coding: utf-8
+</span><span class="kn">import</span> <span class="n">tornado.ioloop</span>
+<span class="kn">import</span> <span class="n">tornado.web</span>
+<span class="kn">import</span> <span class="n">tornado.websocket</span>
+<span class="kn">import</span> <span class="n">tornadoredis</span>
+<span class="kn">from</span> <span class="n">tornado</span> <span class="kn">import</span> <span class="n">gen</span>
+
+<span class="n">CHANNEL</span> <span class="o">=</span> <span class="p">[</span><span class="sh">'</span><span class="s">group_info</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">question_status</span><span class="sh">'</span><span class="p">]</span>
+
+<span class="k">class</span> <span class="nc">WSHandler</span><span class="p">(</span><span class="n">tornado</span><span class="p">.</span><span class="n">websocket</span><span class="p">.</span><span class="n">WebSocketHandler</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">_redis_client</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="nf">super</span><span class="p">(</span><span class="n">WSHandler</span><span class="p">,</span> <span class="n">self</span><span class="p">).</span><span class="nf">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">self</span><span class="p">.</span><span class="nf">_connect_to_redis</span><span class="p">()</span>
+        <span class="n">self</span><span class="p">.</span><span class="nf">_listen</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="n">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">_connect_to_redis</span><span class="p">(</span><span class="n">self</span><span class="p">):</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">_redis_client</span> <span class="o">=</span> <span class="n">tornadoredis</span><span class="p">.</span><span class="nc">Client</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="sh">'</span><span class="s">localhost</span><span class="sh">'</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">6379</span><span class="p">,</span> <span class="n">selected_db</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">_redis_client</span><span class="p">.</span><span class="nf">connect</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">on_message</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="k">pass</span>
+        <span class="c1"># self.write_message(message)
+</span>
+    <span class="nd">@gen.coroutine</span>
+    <span class="k">def</span> <span class="nf">_on_update</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">message</span><span class="p">.</span><span class="n">kind</span> <span class="o">==</span> <span class="sh">'</span><span class="s">message</span><span class="sh">'</span><span class="p">:</span>
+            <span class="n">self</span><span class="p">.</span><span class="nf">write_message</span><span class="p">(</span><span class="n">message</span><span class="p">.</span><span class="n">body</span><span class="p">)</span>
+
+    <span class="nd">@gen.engine</span>
+    <span class="k">def</span> <span class="nf">_listen</span><span class="p">(</span><span class="n">self</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">gen</span><span class="p">.</span><span class="nc">Task</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">_redis_client</span><span class="p">.</span><span class="n">subscribe</span><span class="p">,</span> <span class="n">CHANNEL</span><span class="p">)</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">_redis_client</span><span class="p">.</span><span class="nf">listen</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">_on_update</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">on_close</span><span class="p">(</span><span class="n">self</span><span class="p">):</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">_redis_client</span><span class="p">.</span><span class="nf">unsubscribe</span><span class="p">(</span><span class="n">CHANNEL</span><span class="p">)</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">_redis_client</span><span class="p">.</span><span class="nf">disconnect</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">check_origin</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">origin</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">True</span>
+
+
+<span class="k">def</span> <span class="nf">make_app</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">tornado</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="nc">Application</span><span class="p">([</span>
+        <span class="p">(</span><span class="sa">r</span><span class="sh">"</span><span class="s">/ws</span><span class="sh">"</span><span class="p">,</span> <span class="n">WSHandler</span><span class="p">),</span>
+    <span class="p">])</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="sh">"</span><span class="s">__main__</span><span class="sh">"</span><span class="p">:</span>
+    <span class="n">app</span> <span class="o">=</span> <span class="nf">make_app</span><span class="p">()</span>
+    <span class="n">app</span><span class="p">.</span><span class="nf">listen</span><span class="p">(</span><span class="mi">8888</span><span class="p">)</span>
+    <span class="n">tornado</span><span class="p">.</span><span class="n">ioloop</span><span class="p">.</span><span class="n">IOLoop</span><span class="p">.</span><span class="nf">current</span><span class="p">().</span><span class="nf">start</span><span class="p">()</span>
+
+</code></pre></div></div>
+
+<p>这里主要是通过Redis的订阅发布来实现。在HTTP请求中的一些操作触发了通知，比如新成员加入了群组后</p>
+
+<p>直接操作redis发布消息到某个频道。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+publish group_info somestring
+
+</code></pre></div></div>
+
+<p>具体的内容(somestring)可以自己和客户端商量一个协议，比如通过JSON等等</p>
+
+<p><img src="http://img.ranjiayu.cn/%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_20180214224856.png?imageView2/2/w/308/h/210/interlace/1/q/100" alt="截图" /></p>
+
+
+    </section>
+
+    <hr class="stylish"/>
+
+    <section class="pagination">
+      
+      <a class="prev" href="/2017/12/31/turbolinks.html">&laquo; Turbolinks引发的问题</a>
+      
+      
+      <a class="next" href="/2018/09/29/autumn-interview.html">秋招面试记录 &raquo;</a>
+      
+    </section>
+
+  </article>
+
+</main>
+
+</div>
+<footer>
+  <hr class="stylish"/>
+  <div>
+    Theme: <a href="https://github.com/abhn/Elementary">Elementary</a>
+    <br/>
+    <a>Jiayu</a> &copy; 2024
+  </div>
+</footer>
+
+  <script src="/assets/main.js"></script>
+
+</body>
+</html>

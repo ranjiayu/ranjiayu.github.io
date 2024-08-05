@@ -1,0 +1,495 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2024-08-05T15:08:49+08:00</updated><id>/feed.xml</id><title type="html">Jiayu</title><subtitle>Jiayu&apos;s blog</subtitle><entry><title type="html">Vert.x 笔记</title><link href="/2024/03/05/vertx-01.html" rel="alternate" type="text/html" title="Vert.x 笔记" /><published>2024-03-05T06:46:00+08:00</published><updated>2024-03-05T06:46:00+08:00</updated><id>/2024/03/05/vertx-01</id><content type="html" xml:base="/2024/03/05/vertx-01.html"><![CDATA[<p>很久没有写技术相关的内容了。最近在写一个TCPSocket服务器，用于与硬件交互，由于是自定义协议，所以涉及到了一些字节流处理。</p>
+
+<p>在同事的推荐下使用了Vert.x，以下是一些我的理解和学习笔记。</p>
+
+<h2 id="vertx实例-和-verticle">Vertx实例 和 Verticle</h2>
+
+<p>Vertx实例包括EventBus、Shared Data、Global Session等。</p>
+
+<p>一个Vertx app有两类线程：Eventloop线程、Worker线程。Worker线程用于执行一部分同步代码，Eventloop用于执行verticles。</p>
+
+<p>Verticle可以看作是<strong>一类</strong>线程，一般启动多个Verticle实例来充分发挥多核性能。同一类Verticles可以绑定到同一个端口，参考<a href="https://vertx.io/docs/vertx-core/java/#_scaling_sharing_tcp_servers">官方文档 Scaling - sharing TCP servers</a>。</p>
+
+<p>一个Verticle类可以启动多个实例，N个Verticle被分配到M个eventloop线程上，eventloop线程是Vertx内部自己分配的系统级线程。</p>
+
+<h2 id="异步编程">异步编程</h2>
+
+<p>Vertx的特点，和Nodejs相似。比起Netty这样的框架，需要处理多线程之间的问题，考虑加锁、线程安全问题。由于是<del>单线程</del>Actor模型，基于事件的模型，写的代码不是一个顺序的方式，有一定的上手成本。如果有做过Nodejs开发，那么就非常好理解。和Nodejs一样通过回调或者Promise、Future等方式来书写代码。</p>
+
+<h2 id="verticles-拆分">Verticles 拆分</h2>
+
+<p>既可以按照业务逻辑拆分，也可以按照功能拆分。我的做法是启动了N个TCP Server Verticle（如果只启动一个实例，那么无法充分发挥多核CPU的性能），用于处理Socket连接。启动了Y个线程用于操作数据库/文件的Verticle实例，因为不是所有socket连接都会涉及到相关操作。这需要具体根据业务场景而定。比如在Nodejs中，写代码的时候都是只考虑单线程的逻辑，但是部署的时候可以多进程部署，通过master进程与child进程的通信，来充分利用多核。</p>
+
+<p>很明显，当然也并不是线程数越多越好，默认情况下vertx会启动(CPU数*2)个eventloop线程，如果线程过多反而导致上下文切换的开销不小。</p>
+
+<h2 id="执行同步代码">执行同步代码</h2>
+
+<p>大部分的第三方库都有官方提供的异步实现，比如Redis、MySQL客户端等。没有的可以通过vertx提供的vertx.executeBlocking方法来将同步代码包起来执行，它会自动使用Worker线程去处理。Worker线程通常情况下是不需要手动去启动、处理的。</p>
+
+<h2 id="verticles-通信">Verticles 通信</h2>
+
+<ul>
+  <li>Eventbus，一个vertx实例只有一个eventbus（类似EventEmitter）</li>
+  <li>Shared Data API（异步锁、Map、计数器）</li>
+</ul>
+
+<h2 id="tcp-相关">TCP 相关</h2>
+
+<p>TCP协议已经解决了可靠性和传输有序性的问题，写的时候需要考虑到TCP的数据包是流的形式，比如多个TCP包发过来的时候服务器接受到的可能是一个，可能是多个一起，总之需要在应用层自己处理边界问题。</p>
+
+<p>参考<a href="https://draveness.me/whys-the-design-tcp-message-frame/">为什么 TCP 协议有粘包问题</a>。</p>
+
+<p>常见的分割的方式比如\r\n，定长，协议头写入后续包的长度，参考<a href="https://vertx-china.github.io/docs/vertx-core/java/#_record_parser">官方文档 Record parser</a>，以及参考<a href="https://blog.csdn.net/neosmith/article/details/93724102">Vertx + Protobuf二进制协议解析</a>来实现自定义协议的解析。</p>
+
+<h3 id="buffer">Buffer</h3>
+
+<p>Vertx实现的Buffer类会自动扩容，处理数据也非常的方便。</p>
+
+<p>BTW，一个实用的API：<a href="https://vertx-china.github.io/docs/vertx-core/java/#_event_bus_write_handler">setRegisterWriteHandler</a>，在将应用切分为多个Verticle后，需要在其他的verticle中向socket中写数据时，使用这个API非常方便。</p>
+
+<h2 id="参考资料">参考资料</h2>
+
+<p><a href="https://vertx.io/docs/vertx-core/java/">https://vertx.io/docs/vertx-core/java/</a></p>
+
+<p><a href="https://www.zhihu.com/question/308972356">https://www.zhihu.com/question/308972356</a></p>
+
+<p><a href="https://draveness.me/whys-the-design-tcp-message-frame/">https://draveness.me/whys-the-design-tcp-message-frame/</a></p>
+
+<p><a href="https://blog.csdn.net/neosmith/article/details/93724102">https://blog.csdn.net/neosmith/article/details/93724102</a></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[很久没有写技术相关的内容了。最近在写一个TCPSocket服务器，用于与硬件交互，由于是自定义协议，所以涉及到了一些字节流处理。]]></summary></entry><entry><title type="html">关西之旅</title><link href="/2023/12/23/visit-japan.html" rel="alternate" type="text/html" title="关西之旅" /><published>2023-12-23T06:46:00+08:00</published><updated>2023-12-23T06:46:00+08:00</updated><id>/2023/12/23/visit-japan</id><content type="html" xml:base="/2023/12/23/visit-japan.html"><![CDATA[<p>时间：10.14-10.21</p>
+
+<p>地点：🇯🇵大阪-神户-京都</p>
+
+<p>今年研究生毕业，上次来日本还是本科生毕业（疫情之前）。看着朋友们都在为生活奔波，用各种调休和年假才挤出一些时间来旅游，我感慨自己暂时是幸福的。</p>
+
+<p>第0天到达关西机场后幸好有带一点现金，在机器上买到市区的票竟然没有支持银行卡支付，只能用现金购买，实属意外。住在通天阁附近，去了通天阁、难波八版神社、大阪城、心斋桥。尝了本地的快餐店（以米饭为主，各种don）、一兰拉面。总体来讲，去的都是一些大众的景点，也没有什么特别想去的，这样随意逛逛的旅行有时也挺好的。走了很多路，其实我挺喜欢在城市中漫步，换一个时髦的词叫「city walk」，在这个过程中可以看到在景点看不到的东西，比如当地人的通勤状态，居住的环境、本地人的闲聊（指神态，听不懂说话）。</p>
+
+<p><em>随便逛逛</em>
+<img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202312231047604.jpg" alt="我们在走路中" /></p>
+
+<p>当然仅作为游客是很难深入体会一个国家、城市的文化、工作状态、社会情况等。它们看起来很美好，但是我认为我们在旅游的过程会自动添加上一层滤镜，将自己对美好生活的向往都投射在这趟旅行上。</p>
+
+<p><em>大阪城公园</em>
+<img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202312231050420.jpg" alt="大阪城公园" /></p>
+
+<p>第3天从大阪坐了一个普通的火车到神户，其实也不是很慢。在海边的「BE KOBE」处坐着晒了会儿太阳，吹了下海风，寻一家神户牛肉店，吃完后稍作休息便去往下一站————摩耶山。先坐了一段小火车，然后坐了一段缆车到达山顶。</p>
+
+<p><em>上山第一段小火车</em>
+<img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202312231047633.jpg" alt="上山第一段小火车" /></p>
+
+<p>在上面可以俯瞰整个神户，以及远处的大阪，甚至能隐隐约约看到关西机场。不得不感叹日本的城市建筑群之大，这一片的城市与城市，之间几乎没有郊区、山、湖泊等，密密麻麻全是钢筋水泥。</p>
+
+<p><em>摩耶山俯瞰</em>
+<em><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202312231025412.jpg" alt="摩耶山" /></em></p>
+
+<p>第4天前往京都，并在此停留了3天。京都第一印象就是白人太多了，估计在西方国家中眼中，京都之于日本就等于北京（西安）之于中国。类似于文化之都。大街上也能看到一些穿和服的人。京都是一座适合慢慢逛的地方，打开Google地图，可以看到许许多多的寺庙、博物馆、各种各样的纪念品店，几乎四面环山。古建筑我认为是比不上国内的建筑，感觉都很新，甚至好多我觉得是后建的，或者后来重新修缮的；但也有保护得比较好的，比如二条城，作为幕府的权利象征，里面的设施华丽程度很低，没有金碧辉煌的壁画，没有精雕细琢的桌子、椅子，比如迎客室就是一块「空地」，走的北欧极简风，少数装饰用的水墨画，我猜测这也符合当时的情况，毕竟那时候的日本远比不上天朝。但是他们的旅游配套设施、交通、道路规划这些做得非常好，不会出现进入景区还必须坐景区的观光车额外收费的情况。</p>
+
+<p><em>二条城</em>
+<img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202312231044753.jpg" alt="二条城" /></p>
+
+<p>我也去了周总理曾在留学期间也访问过的岚山，「人间万象真理，愈求愈模糊」，伟人之所以是伟人，在当时就有了如此伟大的抱负，探寻着中国的未来的道路。而我，当时只想着晚上到底吃拉面还是牛肉饭。</p>
+
+<p><em>岚山</em>
+<img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202312231025443.jpg" alt="岚山" /></p>
+
+<p><em>京都小巷</em>
+<img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202312231025427.jpg" alt="京都小巷" /></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[时间：10.14-10.21]]></summary></entry><entry><title type="html">2023年欧洲的最后一游：葡萄牙</title><link href="/2023/11/19/portugal.html" rel="alternate" type="text/html" title="2023年欧洲的最后一游：葡萄牙" /><published>2023-11-19T08:00:00+08:00</published><updated>2023-11-19T08:00:00+08:00</updated><id>/2023/11/19/portugal</id><content type="html" xml:base="/2023/11/19/portugal.html"><![CDATA[<p>无意间发现自己还有一个博客:)，就来更新一下吧。</p>
+
+<hr />
+
+<p>时间：8.15-8.19</p>
+
+<p>地点：🇵🇹葡萄牙Lisbon/Lagos/Faro</p>
+
+<p>早上坐火车从纽卡到爱丁堡机场起飞，到达Faro机场，在入境处被死板老头检查材料很久(亚洲面孔被检查的时间都很长)，在晚上赶到酒店。不知道是气候还是什么原因，第一晚几乎没有入睡。</p>
+
+<p>第二天(8.16)一大早，就到Faro站，乘坐大巴车到里斯本。一路上的葡萄牙内陆风景无心欣赏，一上车就呼呼大睡，头不停地跟随着大巴车的节奏摆动Zzz…经过五六个小时的车程，再次醒来看到了里斯本的四二五大桥(Ponte 25 de Abril)，一座与金门大桥非常像的桥，是里斯本的地标建筑之一。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202311201259064.jpg" alt="四二五大桥" />
+<em>四二五大桥</em></p>
+
+<p>办理好酒店入住后我们直接打车(Bolt)到了最出名的葡式蛋挞店买了两个蛋挞吃，第一次在欧洲敢出门就打车，葡萄牙的消费比起其他欧洲城市要低一些。然后在旁边随便找了一家餐厅，尝了一下「海鲜饭」。葡萄牙的海鲜饭是带汤的，和我们的烫饭很类似，而西班牙的海鲜饭水分比较少，干。有趣的是，这海鲜饭真是咸，必须配水吃，于是我和我朋友轮流拿着水到门外喝，喝完再回来。这么做是因为餐厅不让自带酒水，餐厅卖的水又太贵😄。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202311201259085.jpg" alt="葡式蛋挞" />
+<em>葡式蛋挞</em></p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202311201259098.jpg" alt="海鲜饭" />
+<em>海鲜饭</em></p>
+
+<p>接着去看了贝伦塔，是一个灯塔，也用作军事用途、监狱。然后在周围转了转，八月的里斯本真是热到头晕，再加上前一天实在没有睡好，于是打车到酒店睡了一两个小时。醒来之后，主要就逛了「里斯本上城」，包括圣胡斯塔升降机，圣若热城堡以及里斯本主教堂。里斯本是一座山城，和重庆的渝中区很像，它有着独特的黄色小电车作为交通方式。当时夕阳正好洒在了教堂上，面前路过电车，像电影中的画面！</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202311201259109.jpg" alt="里斯本上城区" />
+<em>里斯本上城区</em></p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202311201259133.jpg" alt="里斯本主教堂前的电车" />
+<em>里斯本主教堂前的电车</em></p>
+
+<p>第三天(8.17)白天去了Praia da Mata海滩进行冲浪活动，这个活动是在Tripadvisor上预定的，一种体验式的冲浪课，教练会教你一些很基础的冲浪动作，也会在水中给你的冲浪版助推，新手比较好上手。总体来讲就是一次独特的体验，不过离真正的冲浪运动还是有不小的差距。整个流程非常chill，大概七八个人一辆面包车接送，一路上车内氛围也很好，大家都在聊音乐以及唱歌，可惜了我的英文口语水平跟不上，音乐知识水平更是匮乏，只能尴尬地笑😄。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202311201259121.JPG" alt="冲浪体验课" />
+<em>冲浪体验课</em></p>
+
+<p>第三天晚上到达Lagos，打车到达酒店。司机问我们是Chinese吗，我们回答是，但是下车后对我们说阿里嘎多。我的手机不小心落到了车上，大脑一片空白了几秒，后来我急忙联系司机，司机也好心地将我的手机送回(真是太感谢他了，身上也没带太多现金，就给了他5欧元的跑腿费)。</p>
+
+<p>第四天就是在Lagos的kayak之旅，从一个海岸口划到另外一个海岸口，途中穿越很多海边的岩石洞穴。有趣的是，当天中午我朋友的论文还在最后的挣扎阶段，于是我们早上跑到一家咖啡厅，坐下后开始生死时速地水毕业论文(没想到出来旅游还得学习，到底是爱学习还是不爱学习)，最终在ddl前提交了毕业论文。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202311201259144.jpg" alt="Kayak" />
+<em>Kayak</em></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[无意间发现自己还有一个博客:)，就来更新一下吧。]]></summary></entry><entry><title type="html">布拉格&amp;amp;维也纳&amp;amp;因特拉肯之旅</title><link href="/2023/08/01/visit-prague-wien-ch.html" rel="alternate" type="text/html" title="布拉格&amp;amp;维也纳&amp;amp;因特拉肯之旅" /><published>2023-08-01T08:00:00+08:00</published><updated>2023-08-01T08:00:00+08:00</updated><id>/2023/08/01/visit-prague-wien-ch</id><content type="html" xml:base="/2023/08/01/visit-prague-wien-ch.html"><![CDATA[<h2 id="布拉格">🇨🇿布拉格</h2>
+<p>时间：7.3-7.5</p>
+
+<p>由于到达布拉格已经是晚上，到达酒店接近凌晨，放好行李后，尝了当地美食麦当劳以后就在街上随便逛逛。布拉格的夜生活非常丰富，即使是在凌晨，街道上仍然来来往往。各种酒吧、俱乐部都在营业。可能是因为游客多的原因，感觉市中心治安还不错。</p>
+
+<p>第二天白天去了布拉格老城，以及布拉格广场。听了天文钟的整点报时，登上了天文钟一览布拉格的全景，红瓦白墙，景色很美。在离开前，去了共产主义博物馆，了解了一下捷克的近代史。</p>
+
+<p><em><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202308011513249.jpg" alt="布拉格老城" /></em></p>
+
+<p><em>布拉格老城</em></p>
+
+<h2 id="维也纳">🇦🇹维也纳</h2>
+<p>时间：7.6-7.7</p>
+
+<p>住的酒店比较便宜，房屋一股苏维埃建筑的味道。首先去了著名景点美泉宫，类似于法国的凡尔赛宫，拥有很大的园林。然后就在市区内到处闲逛，比如斯蒂芬教堂，多瑙河河畔，以及当年拒绝了希特勒的维也纳艺术学院（Google Map中的热评：普通考试今年考不上，明年就二战；他，今年考不上，明年就二战！）。</p>
+
+<p>斯蒂芬教堂可以登顶，旋转式的石头阶梯，爬上去得花费不少时间。傍晚就去城市公园转了转，然后在金色大厅看了一场音乐会，选的是最后一排站着的位置，不允许拍照和录像。到了晚上，在离开之前，去了市政厅面前的小吃集市，有座位，有免费的室外电影，也有酒吧，氛围很好。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202308011513287.jpg" alt="国家歌剧院" /></p>
+
+<p><em>国家歌剧院，不是金色大厅</em></p>
+
+<p>坐凌晨的火车达到机场，有餐厅可以睡觉、充电，非常好。</p>
+
+<h2 id="日内瓦因特拉肯">🇨🇭日内瓦&amp;因特拉肯</h2>
+<p>时间：7.10-7.14</p>
+
+<p>7.7回到英国休息两天后又出发。</p>
+
+<p>日内瓦这个城市很小，从机场到市中心很近，住在日内瓦湖附近的民宿，去市中心步行即可，而且市中心也没什么可逛的。瑞士的物价很高，如果想省钱可以用「Too good to go」App，购买一些餐厅、便利店当日没卖完的食物。</p>
+
+<p>在日内瓦胡的湖边买一杯喝的，吹着风享受阳光是非常的惬意。</p>
+
+<p>瑞士的火车票也非常贵，提前购买superpass票会好很多。因特拉肯以及周边地区美景很美，和新疆差不多。不过它们的交通系统，设施（便利店、游客中心、酒店、民俗、寄存服务等等）非常完善，即使没有车自驾，也能轻松地玩下来。</p>
+
+<p>瑞士的语言系统很混乱，在西边说法语的多，在东边说德语和意大利语的多一点。</p>
+
+<p>在因特拉肯，住的地方叫做Wilderswil，在因特拉肯坐火车几分钟即可达到。后一天早上就坐火车到Grindelwald，看了下著名的网红景点「梦幻山坡」和玩了一下网红项目，从First山半山腰骑车到山下。</p>
+
+<p>在回日内瓦的途中，在施皮茨小镇也停留了一下，看了下中世纪的城堡，欣赏了一下图恩湖的景色。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202308011513273.jpg" alt="因特拉肯" />
+<em>因特拉肯</em></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[🇨🇿布拉格 时间：7.3-7.5]]></summary></entry><entry><title type="html">罗马之旅</title><link href="/2023/06/18/visit-roma.html" rel="alternate" type="text/html" title="罗马之旅" /><published>2023-06-18T08:00:00+08:00</published><updated>2023-06-18T08:00:00+08:00</updated><id>/2023/06/18/visit-roma</id><content type="html" xml:base="/2023/06/18/visit-roma.html"><![CDATA[<p>在考试结束后，2023.5.29 - 2023.6.2 很短的几天去了一趟🇮🇹意大利罗马。</p>
+
+<p>5.29晚上从纽卡斯尔出发，前往London Stansted机场，我是坐的晚上的National Express过去，大巴上没有几个人，但是机场很多人睡在地上，等待凌晨4点的值机，大家都是坐廉价航空的穷人。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202306181340135.jpg" alt="Stansted Airport" /></p>
+
+<p><em>Stansted 机场</em></p>
+
+<p>5.30 早上到达罗马，在Termini附近住下。罗马给我的第一印象就是街头非常旧（也可以说历史气息很重）。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202306181340124.jpg" alt="街景" /></p>
+
+<p><em>街景</em></p>
+
+<p>收拾好行李后就去了罗马竞技场以及古罗马广场。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202306181340110.jpg" alt="竞技场" /></p>
+
+<p><em>竞技场</em></p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202306181340096.jpg" alt="古罗马广场" /></p>
+
+<p><em>古罗马广场</em></p>
+
+<p>第二天去了梵蒂冈博物馆、圣天使堡以及圣彼得教堂（世界上最大的基督教教堂），花费8欧登顶圣彼得教堂后，可以看到罗马的全景。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202306181340069.jpg" alt="俯瞰罗马" /></p>
+
+<p><em>圣彼得教堂 顶部</em></p>
+
+<p>罗马的咖啡店非常之多（以至于星巴克整个罗马只有一家），每隔几十米就会有咖啡店，价格相对欧洲其他地方也是非常实惠，早餐面包+咖啡一共2-3欧左右。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202306181340048.jpg" alt="早餐" /></p>
+
+<p><em>早餐</em></p>
+
+<p>罗马的喷泉随处可见，因为古罗马是个炎热的地方，政府花了很多钱修建水渠，打造引水系统，也修建了很多「浴场」来供古时候的人们洗澡用，所以街道上现在也是很多泉水口，而且很多水可以直接饮用。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202306181349039.jpg" alt="街道上的出水口" /></p>
+
+<p><em>街道上的出水口</em></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[在考试结束后，2023.5.29 - 2023.6.2 很短的几天去了一趟🇮🇹意大利罗马。]]></summary></entry><entry><title type="html">法国&amp;amp;西班牙之旅</title><link href="/2023/04/25/visit-france-spain.html" rel="alternate" type="text/html" title="法国&amp;amp;西班牙之旅" /><published>2023-04-25T08:00:00+08:00</published><updated>2023-04-25T08:00:00+08:00</updated><id>/2023/04/25/visit-france-spain</id><content type="html" xml:base="/2023/04/25/visit-france-spain.html"><![CDATA[<p>在4.9-4.19期间去了法国巴黎、里昂、尼斯以及西班牙的巴塞罗那、马德里。</p>
+
+<h3 id="法国-france">🇫🇷法国 France</h3>
+
+<p>巴黎(Paris)给我的第一印象比较好，也许是因为住在15区，没有像英国一样街道很脏很乱的感觉。而且几乎有法语的标识的地方都有英文，甚至在机场还有中文。前不久刚看了「John Wick 4」，立马就看到凯旋门和巴黎铁塔感觉很棒。法国人遇到人开口几乎是说法语，即使很明显意识到你并不是法国人，除非你对他们说英语，才会用英语回应。总体来说，遇到的所有人都很友善，也没有遭遇小偷和抢劫。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202304260022336.jpeg" alt="埃菲尔铁塔" /></p>
+
+<p><em>埃菲尔铁塔</em></p>
+
+<p>里昂(Lyon)属于南法，我去的时候天气比巴黎的阴晴不定好太多了，阳光、河流、山构成了一幅美丽的画，有河流、山，城市依山而建，有索道地铁上山，这一点和重庆好像。刚到的时候去了里民宿不远处的一座山上随机找一家法式的餐厅吃了简餐，下午两三点餐厅依然有零星的当地人悠闲地吃着，真是羡慕啊。可惜的一点是在里昂那天正好有抗议游行，没有亲眼目睹。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202304260013411.jpeg" alt="里昂" /></p>
+
+<p><em>里昂</em></p>
+
+<p>从里昂到尼斯(Nice)的火车上，手机信号没有信号，周围的人都在看书或者睡觉，还有一对情侣在玩填字游戏，阳光射进车厢，望着远处无际的平原，感叹生活有时真的还挺美好。在马赛到尼斯的海岸线上，有一种到镰仓的错觉，海水是浅蓝色，建筑也显得有一点「非洲」(应该是南法)的风格。尼斯古城有趣的小店很多，阳光很好，是一个适合度假的地方。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202304260013422.jpeg" alt="尼斯" /></p>
+
+<p><em>尼斯</em></p>
+
+<h3 id="西班牙-spain">🇪🇸西班牙 Spain</h3>
+
+<p>四月十五晚，从尼斯到巴塞罗那(Barcelona)。巴塞罗那的城市规划震撼了我，密密麻麻的方格，整个城市大部分区域被划分得整整齐齐，真正意义上的Block！Uber司机通过街区地址和门牌号准确地送到民宿门口。但是缺点就是红绿灯很多，没有地下通道或者天桥。街道两旁栽了很多大树，配合上一些中文招牌，给人一种回到国内的错觉！其中最出名的景点当然是圣家族教堂，一座充满现代艺术感的天主教教堂，由建筑家高迪设计，目前还没有完工。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202304260013461.JPG" alt="巴塞罗那" /></p>
+
+<p><em>巴塞罗那</em></p>
+
+<p>坐火车穿越了中部的荒凉地带后，来到马德里(Madrid)，天气变得热了起来。马德里给我的感觉比巴塞罗那要好，城市的整洁度感觉更好。由于旅行接近尾声，人也比较疲惫，就没有去太多的地方，就去了丽池公园坐了一下午。在树荫下的长凳上打个小盹，不远处有人在演奏一首很熟悉的旋律，好像是小时候看的「五号特工组」的结尾曲，查了之后才知道是意大利民谣「Bella ciao」，还是比较惬意的。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202304260013434.jpeg" alt="西班牙广场" /></p>
+
+<p><em>西班牙广场</em></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[在4.9-4.19期间去了法国巴黎、里昂、尼斯以及西班牙的巴塞罗那、马德里。]]></summary></entry><entry><title type="html">阿姆斯特丹之旅</title><link href="/2023/04/20/visit-in-netherlands.html" rel="alternate" type="text/html" title="阿姆斯特丹之旅" /><published>2023-04-20T08:10:30+08:00</published><updated>2023-04-20T08:10:30+08:00</updated><id>/2023/04/20/visit-in-netherlands</id><content type="html" xml:base="/2023/04/20/visit-in-netherlands.html"><![CDATA[<p>在复活节开始前，三月底，背上书包坐上廉航直接去了🇳🇱荷兰首都阿姆斯特丹，进行了短短三天的游览。主要目的地为：国立博物馆、梵高博物馆、赞丹风车村、库肯霍夫（Keukenhof）郁金香园。</p>
+
+<p>荷兰，风车王国。Amster<strong>dam</strong>，阿姆斯特尔河上的水坝。的确，这种城市被运河所充满，市中心随处可见的河流与桥，有时在不同的街道却给人一种「刚刚来过」的感觉。随处可见的阿姆斯特丹的旗帜是三个叉，代表着火灾、洪水和黑死病，由于它的自由与开放，同时它也被戏称为「黄赌毒」。因为大麻合法，走在阿姆斯特丹的大街小巷，经常会闻到一股飘来的大麻味。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202304201749940.jpeg" alt="市区运河" />
+<em>市区运河</em></p>
+
+<p>阿姆斯特丹的天气与英国沿海城市很像，变幻莫测，阴晴不定。印象很深的是这里的自行车非常多，很多人选择自行车出行，而且很多自行车的前面甚至安装有一个大篮子用于装物品和小孩。原因是设施非常完善，自行车道路遍布全市，地铁公交都有放自行车的地方。还有一点很多道路在河的两端非常窄，骑自行车的确是一种非常灵活的方式。</p>
+
+<p>关于风车，我之前一直以为荷兰的风车是用于发电。后来才知道是用于研磨，利用风能对各种材料进行加工。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202304201749968.jpeg" alt="荷兰风车" />
+<em>赞丹风车村</em></p>
+
+<p>梵高，一位30岁才开始学习画画，37岁就结束生命一位伟大的画家。一位郁郁不得志的画家，在那个时代没有人能够理解他，生前只卖出过一副作品，不得不让人感叹。早期痴迷宗教却被宗教所抛弃，感情上也是彻头彻尾的失败者，但在绘画艺术上确实天才。从不同时期的画中，可以感受得到他内心与精神状态的变化。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202304201751109.jpeg" alt="梵高的画" />
+<em>梵高的画</em></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[在复活节开始前，三月底，背上书包坐上廉航直接去了🇳🇱荷兰首都阿姆斯特丹，进行了短短三天的游览。主要目的地为：国立博物馆、梵高博物馆、赞丹风车村、库肯霍夫（Keukenhof）郁金香园。]]></summary></entry><entry><title type="html">丹麦&amp;amp;芬兰之旅</title><link href="/2022/12/31/journey-denmark-finland.html" rel="alternate" type="text/html" title="丹麦&amp;amp;芬兰之旅" /><published>2022-12-31T08:10:30+08:00</published><updated>2022-12-31T08:10:30+08:00</updated><id>/2022/12/31/journey-denmark-finland</id><content type="html" xml:base="/2022/12/31/journey-denmark-finland.html"><![CDATA[<p>在圣诞期间去丹麦、芬兰的旅行流水账记录。</p>
+
+<h2 id="签证办理">签证办理</h2>
+
+<h3 id="预约">预约</h3>
+
+<p>首先需要在出发前1-2个月预约递签时间，尽早预约最好，在VFS Global官方网站选择好国家后注册账号，填写基本信息，选择递交地点爱丁堡、伦敦、曼彻斯特。申请的国家必须满足两个条件之一：待时间最长的国家；第一入境国家。</p>
+
+<h3 id="材料">材料</h3>
+
+<p>在预约成功后，即可开始准备递签所需的材料，每个国家要求递签的材料有微小的差距，以下是我递交芬兰所需材料：</p>
+
+<ul>
+  <li>申请表(在对应国家递签的网站中填写并打印，左上角需要有条形码)</li>
+  <li>护照首页以及护照复印件</li>
+  <li>BRP正反面复印件</li>
+  <li>在读证明(芬兰无需特定Title，其他国家需要如冰岛、西班牙)</li>
+  <li>交通证明(机票预订单, 火车票收据等，如果有跨天机票，则需要多订跨天那一天的酒店，签证到手后退款即可)</li>
+  <li>行程单(每天的住宿、交通方式以及景点)</li>
+  <li>酒店住宿预订单(上面必须有包含申请人的姓名)</li>
+  <li>保险(Coverwise上购买，10+磅一年)</li>
+  <li>财力证明，最近三个月银行流水(如果不满三个月，需要打印Account Summary并盖章)</li>
+  <li>预约单</li>
+</ul>
+
+<p>建议加一点钱购买可退的机票，以及订可免费取消的酒店，如果发生意外情况也可以减少损失。</p>
+
+<p>在读证明如果需要加Title(To xxx embassy)以及盖章可能需要额外时间，取决于学校工作人员工作效率。</p>
+
+<h3 id="递签">递签</h3>
+
+<p>爱丁堡递签当日，拿到号码后递交材料，如果所需材料不齐，可以当场打印(打印费0.5磅1张A4纸)，无法当场打印的材料通过5工作日内通过邮件提交，以及后续如果材料不齐大使馆会发送邮件要求补齐材料，比如我在递签后通过邮件补交了银行账户信息和火车票。每个工作人员的要求的材料和态度会有微小出入，看运气。</p>
+
+<h3 id="行程准备">行程准备</h3>
+
+<ul>
+  <li>BRP, 护照, 行程单, 机票行程单</li>
+  <li>防水裤, 防水鞋, 冲锋衣, 帽子, 围巾, 泳衣(温泉用, 非必需)</li>
+  <li>欧标转接插头</li>
+  <li>洗漱用品, 酒店拖鞋</li>
+  <li>常用药品(创口贴, 感冒药, 过敏药)</li>
+  <li>手机卡漫游</li>
+</ul>
+
+<h2 id="丹麦-denmark">🇩🇰丹麦 Denmark</h2>
+
+<p>由于12.19冰岛的大暴雪，而且结束日期预计持续多天，不得不改变行程，去往能买到机票最便宜的地方——哥本哈根。</p>
+
+<h3 id="哥本哈根-copenhagen">哥本哈根 Copenhagen</h3>
+
+<p>交通: 哥本哈根3日卡108欧元，几乎包括了所有主流景点的票和交通（具体见官方），上下车不需要刷卡，如果有人查票出示即可。</p>
+
+<p>住宿: Hotel Alexandra</p>
+
+<p>行程:</p>
+
+<ul>
+  <li>Day0: 到达哥本哈根酒店 Hotel Alexandra，房间虽小不过一切都够用，性价比也比较高。</li>
+  <li>Day1:
+    <ul>
+      <li>市政厅: 附近有安徒生雕塑</li>
+      <li>哥本哈根博物馆: 介绍了哥本哈根城市的历史</li>
+      <li>丹麦国家博物馆: 不仅仅是有丹麦的展品，各个国家的都有</li>
+      <li>Christiansborg Slot: 一个高塔可以看附近的风景</li>
+      <li>Nyhavn: 新港，五颜六色的房子，网红打卡地</li>
+      <li>The Little Mermaid: 海边的美人鱼雕塑</li>
+      <li>Tivoli: 古老的游乐园，当天晚上人很多，有过山车跳楼机等</li>
+    </ul>
+  </li>
+  <li>Day2:
+    <ul>
+      <li>Ny Carlsberg Glyptotek: 一个美术馆，包括了埃及、希腊、法国、丹麦的雕塑和画等。</li>
+      <li>Grundvigs Church: 管风琴教堂，外观和内部设计都非常令人震撼的一个教堂。</li>
+      <li>Frederik’s Church:</li>
+      <li>Round tower: 圆塔，登顶后看附近繁华的Stroget步行街。</li>
+    </ul>
+  </li>
+  <li>Day3: Louisiana Museum of Modern Art: 离市区稍远，坐火车前往，展品多，景色美</li>
+</ul>
+
+<p>丹麦的物价很高，一瓶矿泉水20-30克朗，1人民币=0.99克朗，吃MC等快餐也要80-100一顿，吃馆子的话人均150以上。</p>
+
+<h2 id="芬兰-finland">🇫🇮芬兰 Finland</h2>
+
+<p>由于到赫尔辛基的时间是12.24，很多商店都不开门，所以需要找到第二天营业的餐厅。在<a href="https://www.myhelsinki.fi/en/info/tourist-information">这个网站</a>可以找到相关的信息，列出观光、美食很多意见，交通变动等信息。</p>
+
+<p>本计划参团行，后来改变行程，导致行程安排有一些不合理(比如在Oulu停留一晚，更好的选择是买赫尔辛基到罗瓦涅米的卧铺VR列车，可以省下一晚上住宿)，以下仅供参考。</p>
+
+<p>市内交通：</p>
+
+<ul>
+  <li>赫尔辛基: 一日交通卡，在每个地铁站即可购买。</li>
+  <li>奥卢: 步行</li>
+  <li>罗瓦涅米: 包车</li>
+</ul>
+
+<p>大交通：赫尔辛基-奥卢, 奥卢-罗瓦涅米 VR列车</p>
+
+<h3 id="赫尔辛基-helsinki">赫尔辛基 Helsinki</h3>
+
+<ul>
+  <li>Day0:
+    <ul>
+      <li>到达酒店 Radisson Blu Royal Hotel</li>
+      <li>酒店附近的 Old Church Park</li>
+    </ul>
+  </li>
+  <li>Day1:
+    <ul>
+      <li>赫尔辛基大教堂 Helsinki Catherdal: 人称白教堂</li>
+      <li>Uspenki Cathedral: 人称红教堂，从大教堂步行至很近，中间会路过港口可以坐船，而且在圣诞节当天也有简易的集市，可以吃饭。</li>
+      <li>岩石教堂 Temppeliaukion Church: 顾名思义。门票5欧。</li>
+      <li>西贝柳斯公园 Sibelius Park: 海边的一个公园，有落日的话风景很美，有一些雕塑可以拍照打卡。</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="奥卢-oulu--罗瓦涅米-rovaniemi">奥卢 Oulu / 罗瓦涅米 Rovaniemi</h3>
+
+<p>追极光活动和哈士奇驯鹿拉车活动都是从TripAdvisor上购买，活动当天与供应商联系确定接送地点。</p>
+
+<ul>
+  <li>Day2: VR列车从赫尔辛基-奥卢，晚上到达奥卢，在市区中稍微转一下，去了离酒店不远处的胖警察雕塑打卡。
+    <ul>
+      <li>酒店 Radisson Blu Hotel</li>
+      <li>胖警察雕塑 Toripolliisi patsas</li>
+    </ul>
+  </li>
+  <li>Day3: VR列车从奥卢-罗瓦涅米，打卡世界上最北的麦当劳，入住民宿当晚追极光</li>
+  <li>Day4: 逛圣诞老人村，哈士奇驯鹿拉车活动</li>
+</ul>
+
+<h2 id="一些照片">一些照片</h2>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202301091606894.JPG" alt="哥本哈根市政厅" /></p>
+
+<p><em>哥本哈根市政厅</em></p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202301091607173.JPG" alt="眺望哥本哈根市区" /></p>
+
+<p><em>眺望哥本哈根市区</em></p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202301091607814.JPG" alt="新港的彩色房屋" /></p>
+
+<p><em>新港的彩色房屋</em></p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202301091607183.JPG" alt="管风琴教堂" /></p>
+
+<p><em>管风琴教堂</em></p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202301091608266.JPG" alt="赫尔辛基大教堂" /></p>
+
+<p><em>赫尔辛基大教堂</em></p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202301091609848.JPG" alt="赫尔辛基街道" /></p>
+
+<p><em>赫尔辛基街道</em></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[在圣诞期间去丹麦、芬兰的旅行流水账记录。 签证办理 预约 首先需要在出发前1-2个月预约递签时间，尽早预约最好，在VFS Global官方网站选择好国家后注册账号，填写基本信息，选择递交地点爱丁堡、伦敦、曼彻斯特。申请的国家必须满足两个条件之一：待时间最长的国家；第一入境国家。 材料 在预约成功后，即可开始准备递签所需的材料，每个国家要求递签的材料有微小的差距，以下是我递交芬兰所需材料： 申请表(在对应国家递签的网站中填写并打印，左上角需要有条形码) 护照首页以及护照复印件 BRP正反面复印件 在读证明(芬兰无需特定Title，其他国家需要如冰岛、西班牙) 交通证明(机票预订单, 火车票收据等，如果有跨天机票，则需要多订跨天那一天的酒店，签证到手后退款即可) 行程单(每天的住宿、交通方式以及景点) 酒店住宿预订单(上面必须有包含申请人的姓名) 保险(Coverwise上购买，10+磅一年) 财力证明，最近三个月银行流水(如果不满三个月，需要打印Account Summary并盖章) 预约单 建议加一点钱购买可退的机票，以及订可免费取消的酒店，如果发生意外情况也可以减少损失。 在读证明如果需要加Title(To xxx embassy)以及盖章可能需要额外时间，取决于学校工作人员工作效率。 递签 爱丁堡递签当日，拿到号码后递交材料，如果所需材料不齐，可以当场打印(打印费0.5磅1张A4纸)，无法当场打印的材料通过5工作日内通过邮件提交，以及后续如果材料不齐大使馆会发送邮件要求补齐材料，比如我在递签后通过邮件补交了银行账户信息和火车票。每个工作人员的要求的材料和态度会有微小出入，看运气。 行程准备 BRP, 护照, 行程单, 机票行程单 防水裤, 防水鞋, 冲锋衣, 帽子, 围巾, 泳衣(温泉用, 非必需) 欧标转接插头 洗漱用品, 酒店拖鞋 常用药品(创口贴, 感冒药, 过敏药) 手机卡漫游 🇩🇰丹麦 Denmark 由于12.19冰岛的大暴雪，而且结束日期预计持续多天，不得不改变行程，去往能买到机票最便宜的地方——哥本哈根。 哥本哈根 Copenhagen 交通: 哥本哈根3日卡108欧元，几乎包括了所有主流景点的票和交通（具体见官方），上下车不需要刷卡，如果有人查票出示即可。 住宿: Hotel Alexandra 行程: Day0: 到达哥本哈根酒店 Hotel Alexandra，房间虽小不过一切都够用，性价比也比较高。 Day1: 市政厅: 附近有安徒生雕塑 哥本哈根博物馆: 介绍了哥本哈根城市的历史 丹麦国家博物馆: 不仅仅是有丹麦的展品，各个国家的都有 Christiansborg Slot: 一个高塔可以看附近的风景 Nyhavn: 新港，五颜六色的房子，网红打卡地 The Little Mermaid: 海边的美人鱼雕塑 Tivoli: 古老的游乐园，当天晚上人很多，有过山车跳楼机等 Day2: Ny Carlsberg Glyptotek: 一个美术馆，包括了埃及、希腊、法国、丹麦的雕塑和画等。 Grundvigs Church: 管风琴教堂，外观和内部设计都非常令人震撼的一个教堂。 Frederik’s Church: Round tower: 圆塔，登顶后看附近繁华的Stroget步行街。 Day3: Louisiana Museum of Modern Art: 离市区稍远，坐火车前往，展品多，景色美 丹麦的物价很高，一瓶矿泉水20-30克朗，1人民币=0.99克朗，吃MC等快餐也要80-100一顿，吃馆子的话人均150以上。 🇫🇮芬兰 Finland 由于到赫尔辛基的时间是12.24，很多商店都不开门，所以需要找到第二天营业的餐厅。在这个网站可以找到相关的信息，列出观光、美食很多意见，交通变动等信息。 本计划参团行，后来改变行程，导致行程安排有一些不合理(比如在Oulu停留一晚，更好的选择是买赫尔辛基到罗瓦涅米的卧铺VR列车，可以省下一晚上住宿)，以下仅供参考。 市内交通： 赫尔辛基: 一日交通卡，在每个地铁站即可购买。 奥卢: 步行 罗瓦涅米: 包车 大交通：赫尔辛基-奥卢, 奥卢-罗瓦涅米 VR列车 赫尔辛基 Helsinki Day0: 到达酒店 Radisson Blu Royal Hotel 酒店附近的 Old Church Park Day1: 赫尔辛基大教堂 Helsinki Catherdal: 人称白教堂 Uspenki Cathedral: 人称红教堂，从大教堂步行至很近，中间会路过港口可以坐船，而且在圣诞节当天也有简易的集市，可以吃饭。 岩石教堂 Temppeliaukion Church: 顾名思义。门票5欧。 西贝柳斯公园 Sibelius Park: 海边的一个公园，有落日的话风景很美，有一些雕塑可以拍照打卡。 奥卢 Oulu / 罗瓦涅米 Rovaniemi 追极光活动和哈士奇驯鹿拉车活动都是从TripAdvisor上购买，活动当天与供应商联系确定接送地点。 Day2: VR列车从赫尔辛基-奥卢，晚上到达奥卢，在市区中稍微转一下，去了离酒店不远处的胖警察雕塑打卡。 酒店 Radisson Blu Hotel 胖警察雕塑 Toripolliisi patsas Day3: VR列车从奥卢-罗瓦涅米，打卡世界上最北的麦当劳，入住民宿当晚追极光 Day4: 逛圣诞老人村，哈士奇驯鹿拉车活动 一些照片 哥本哈根市政厅 眺望哥本哈根市区 新港的彩色房屋 管风琴教堂 赫尔辛基大教堂 赫尔辛基街道]]></summary></entry><entry><title type="html">在纽卡素的第一周</title><link href="/2022/09/27/first-week-in-ncl.html" rel="alternate" type="text/html" title="在纽卡素的第一周" /><published>2022-09-27T23:40:00+08:00</published><updated>2022-09-27T23:40:00+08:00</updated><id>/2022/09/27/first-week-in-ncl</id><content type="html" xml:base="/2022/09/27/first-week-in-ncl.html"><![CDATA[<p>到纽卡素已经一段时间了，记录一下这几日的见闻吧。</p>
+
+<p>纽卡素位于英国兰东北部，靠近苏格兰的一个小城市。有一条河穿流而过，通向北海，名为泰恩河。刚到这里的时候，由于当地说话有一点苏格兰的口音，导致很多时候我听不清楚说的什么单词而闹笑话^_^。</p>
+
+<h2 id="人">人</h2>
+
+<p>大部分人都是有礼貌的，都会把cheers或者thank you挂在嘴边，不管是否出自于真心，总是会让人觉得舒服。因为有两个大学(Newcastle University 和 Northumbria University)在市中心，所以可以看到各种各样来自世界各地的人。当然英国本身也是一个多文化的国家。</p>
+
+<h2 id="支付">支付</h2>
+
+<p>这边的支付方式主要是银行卡、信用卡，也可以手机绑定卡后使用NFC支付(Google Pay/Apple pay)，许多便利店的大部分自助结账机器只支持卡支付。这一点我认为比国内的主流支付方式微信、支付宝扫码更加方便。</p>
+
+<p>存钱到本地银行最方便的不是ATM机器，很多机器只能取出，存钱去邮局。</p>
+
+<p>当然，大部分地方(如便利店、商城、餐厅)也是支持现金支付的。</p>
+
+<h2 id="吃穿住行">吃穿住行</h2>
+
+<p>天气：多雨多变。10多度的小雨天气，当地人还有穿短裤的。</p>
+
+<p>住：房屋都是独栋一般都是两楼，没有什么高楼大厦，除了像写字楼或者学生公寓会稍微高一点。学生公寓Ensuite的价格在140-200磅一周。</p>
+
+<p>交通：作为英格兰第五大城市，方式有公交、地铁、火车，但价格都不低。</p>
+
+<p>吃：快餐以及各种异国餐厅，异国餐厅价格都很贵，吃一顿人均100+人名币。快餐便宜的4-6磅，贵的8-10磅。</p>
+
+<p>街道：支路街道并没有想象中那么干净，不如国内的街道干净。</p>
+
+<h2 id="covid">COVID</h2>
+
+<p>大概95%的人没有戴口罩，差不多已经群体免疫了，要是感染了就是自己吃退烧药自愈。</p>
+
+<h2 id="其他">其他</h2>
+
+<p>邮编：这里的邮编精确到每一栋楼，不管是购物还是办理各种证件，邮编都很重要。所以很多正式的信件也是直接投递到信箱，还要每天拿一把钥匙去打开信箱看看是否有邮件，有一种复古的感觉。</p>
+
+<p>网站域名：规范化，例如公司的网站就是co.uk结尾，学校的就是ac.uk结尾。</p>
+
+<p>APP：规范，包括网站都会把隐私政策放在最明显的地方。除了银行以外，其他APP几乎不需要填写一大堆与你无关的信息，如手机号，对必要获取的隐私信息也有详细的说明。强烈鄙视国内的各种厂商恨不得掌握你的所有信息。</p>
+
+<p>工作时间：非常严格，不到时间点商城不开门，非上班时间邮件也常不回复。</p>
+
+<hr />
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202209251721813.jpg" alt="" height="100%" width="100%" /></p>
+
+<p>以上仅仅只是作为一名学生，到陌生的地方的一些第一印象，所有内容全为自身感受，不代表实际情况。</p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[到纽卡素已经一段时间了，记录一下这几日的见闻吧。 纽卡素位于英国兰东北部，靠近苏格兰的一个小城市。有一条河穿流而过，通向北海，名为泰恩河。刚到这里的时候，由于当地说话有一点苏格兰的口音，导致很多时候我听不清楚说的什么单词而闹笑话^_^。 人 大部分人都是有礼貌的，都会把cheers或者thank you挂在嘴边，不管是否出自于真心，总是会让人觉得舒服。因为有两个大学(Newcastle University 和 Northumbria University)在市中心，所以可以看到各种各样来自世界各地的人。当然英国本身也是一个多文化的国家。 支付 这边的支付方式主要是银行卡、信用卡，也可以手机绑定卡后使用NFC支付(Google Pay/Apple pay)，许多便利店的大部分自助结账机器只支持卡支付。这一点我认为比国内的主流支付方式微信、支付宝扫码更加方便。 存钱到本地银行最方便的不是ATM机器，很多机器只能取出，存钱去邮局。 当然，大部分地方(如便利店、商城、餐厅)也是支持现金支付的。 吃穿住行 天气：多雨多变。10多度的小雨天气，当地人还有穿短裤的。 住：房屋都是独栋一般都是两楼，没有什么高楼大厦，除了像写字楼或者学生公寓会稍微高一点。学生公寓Ensuite的价格在140-200磅一周。 交通：作为英格兰第五大城市，方式有公交、地铁、火车，但价格都不低。 吃：快餐以及各种异国餐厅，异国餐厅价格都很贵，吃一顿人均100+人名币。快餐便宜的4-6磅，贵的8-10磅。 街道：支路街道并没有想象中那么干净，不如国内的街道干净。 COVID 大概95%的人没有戴口罩，差不多已经群体免疫了，要是感染了就是自己吃退烧药自愈。 其他 邮编：这里的邮编精确到每一栋楼，不管是购物还是办理各种证件，邮编都很重要。所以很多正式的信件也是直接投递到信箱，还要每天拿一把钥匙去打开信箱看看是否有邮件，有一种复古的感觉。 网站域名：规范化，例如公司的网站就是co.uk结尾，学校的就是ac.uk结尾。 APP：规范，包括网站都会把隐私政策放在最明显的地方。除了银行以外，其他APP几乎不需要填写一大堆与你无关的信息，如手机号，对必要获取的隐私信息也有详细的说明。强烈鄙视国内的各种厂商恨不得掌握你的所有信息。 工作时间：非常严格，不到时间点商城不开门，非上班时间邮件也常不回复。 以上仅仅只是作为一名学生，到陌生的地方的一些第一印象，所有内容全为自身感受，不代表实际情况。]]></summary></entry><entry><title type="html">新疆伊犁之旅</title><link href="/2022/07/28/journey-in-xinjiang.html" rel="alternate" type="text/html" title="新疆伊犁之旅" /><published>2022-07-28T11:40:00+08:00</published><updated>2022-07-28T11:40:00+08:00</updated><id>/2022/07/28/journey-in-xinjiang</id><content type="html" xml:base="/2022/07/28/journey-in-xinjiang.html"><![CDATA[<p>在独库公路开通后，和高中同学以及同学的同学一起去了新疆。这次走的路线主要是看自然风光，很遗憾没有去南疆的一些具有人文特色的地方。不过新疆这么大，以后还会有机会再去的。</p>
+
+<p>落地乌鲁木齐后就在机场提了车，虽然已经是北京时间晚上8、9点，城市的黄昏才刚刚开始。第二天开始我们从乌鲁木齐出发。大致路线为：乌鲁木齐-&gt;独山子大峡谷-&gt;赛里木湖-&gt;那拉提-&gt;库车-&gt;库尔勒-&gt;乌鲁木齐。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202207281151936.jpg" alt="赛里木湖" height="100%" width="100%" />
+<em>赛里木湖</em></p>
+
+<p>赛里木湖绝对是景色里的TOP3，草原、湖泊、树林同时出现在一幅画中，当然必须是在晴天，这样湖面才显得格外的蓝。结束以后就是一段车非常少的高速，直叫把人开到困。都说新疆西藏的美景在路上，的确如此，途中可以看到淡红色且光秃秃的山、死寂的沙漠、远处绿色的草原、潺潺的小流。有一种刚置身于「绝命毒师」中的墨西哥荒漠，又切换到了蒙古大草原的错落感。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202207281151950.jpg" alt="独库公路路上" height="100%" width="100%" />
+<em>独库公路路上</em></p>
+
+<p>在新疆由于景点之间遥远，现代人的时间又都是十分珍贵。所以开车的人累，坐车的人也累，难得有时间闲下来发呆。于是在车内进行民主投票后，我们决定在那拉提镇多停留半天。旅行真正有趣的地方就是这样，除了看了所谓的「景点」以外，还有许许多多平时看不到的东西去探索。于是我去当地镇上理了发，不过结果很糟糕。然后等到九点半左右日落的时候，带上西瓜，漫无目的地向西边开，到巩乃斯河边上坐下，欣赏黄昏日落与<del>观察放羊的本地人</del> watching the world go by。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202207281151908.jpg" alt="那拉提镇" height="100%" width="100%" />
+<em>那拉提镇</em></p>
+
+<p>旅行的最后一天去了「罗布人村寨」，到的时候比较晚人不多，整个景点不算热门，景色不错，主要也是沙漠湖泊。住在景点中的客栈，晚上可以看到城市中难得一见星空，北斗、夏季大三角……望着星空有时会感叹人的渺小，不管这一生是多么精彩多么悲哀，在宇宙的长河中也不过是一瞬间的罢了，所以在心情不好的时候看看星空，也许什么都看开了。</p>
+
+<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202207281151961.jpg" alt="罗布人村寨" height="100%" width="100%" />
+<em>罗布人村寨</em></p>
+
+<hr />
+
+<p>说到最喜欢的美食，那就是朴实无华的「手抓饭」。黄萝卜、胡萝卜、碎羊肉、米饭、油配合到一起，它的地位类似重庆小面，是很多人本地人的快餐。</p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><summary type="html"><![CDATA[在独库公路开通后，和高中同学以及同学的同学一起去了新疆。这次走的路线主要是看自然风光，很遗憾没有去南疆的一些具有人文特色的地方。不过新疆这么大，以后还会有机会再去的。]]></summary></entry></feed>
