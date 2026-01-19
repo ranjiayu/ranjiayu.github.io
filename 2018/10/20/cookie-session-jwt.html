@@ -1,82 +1,53 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Cookie/Session/JWT | jiayu’s blog</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Cookie/Session/JWT" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="发现只有在写博客的时候，才会认真地去学习。总结一下我在学习、写前后端项目中的一些有关身份验证的心得体会。 因为HTTP是无状态的，如何保证用户和用户之间的操作隔离开来，如何保证有些接口、页面只有某些用户才能访问。一般通过下面的方式实现： 1.cookie方案 原理 这种方式依赖没用禁用cookie浏览器环境。 step1：客户端请求登陆接口，服务端返回200状态码同时把cookie给客户端。 step2：客户端在需要身份验证的接口上带上cookie。 step3：服务端把cookie取出、解析后就可以知道身份了。 那session（会话）又是什么？session不是一个实体，而是基于cookie来维持会话状态的一种技术。有些敏感信息存储在客户端导致不安全，所以服务端在创建session的时候生成一个session_id通过cookie传给客户端。而服务端维持一个 session_id -&gt; session 类似的哈希结构。 一般来说session是在内存中的，但是通常会把这个哈希结构用KV(键值对)数据库来存储，这样做的好处是方便管理，而且在分布式的环境下也可以。 服务端大致实现思路： const http = require(&#39;http&#39;) const server = http.createServer((req, res) =&gt; { if (req.url === &#39;/login&#39;){ // 从数据库中验证账号密码正确（略） // 保存下面这个SESSION_ID（略） // 设置响应头 res.writeHead(200, { &#39;Content-Type&#39;: &#39;application/json&#39;, &#39;Set-Cookie&#39;: &#39;SESSION_ID=abcdefg; HttpOnly;&#39; }) // 返回响应 res.write(JSON.stringify({ code: 200, msg: &#39;OK&#39; })) res.end() } // 匹配其他路由 else { if (req.headers.cookie &amp;&amp; isValid(req.headers.cookie)){ // 解析cookie并验证，验证通过做一些事情 // 验证失败则返回code 401 res.write(&#39;OK&#39;) res.end() } } }) server.listen(3000) 前端需要注意：使用fetch时默认不携带cookie，需要手动设置。在XMLHttpRequest中也是。 // Fetch fetch({ //cookie既可以同域发送，也可以跨域发送 credentials: &#39;include&#39; }) // XMLHttpRequest xhr.withCredentials = true 安全 首先，没用绝对的安全。只能通过一些手段来提高安全性。 1.在set-cookie的时候使用HttpOnly。这样可以防止客户端通过JS来获取cookie，在一些XSS攻击中可能会导致cookie泄漏。 2.HTTPS。在传输过程中cookie不会以明文的方式传递，就算被第三方截取，也是加密过的。 3.服务端的session过期机制。 Token方案 在一些非浏览器环境下（当然浏览器环境也可以使用该方案），如微信小程序、APP中等前端如何和后端通信。其实原理和上面说的是一样的。 原理 step1：客户端请求登陆接口，服务端返回Token，且客户端手动将Token保存。 step2：客户端发起请求的时候将Token带上。 step3：服务端解析Token。 不同就在于需要手动去存储这个凭证。 安全 1.Token设置过期时间，增加刷新机制。 2.HTTPS。 JWT JWT(JSON Web Token)，我过去对JWT的理解是错误的。 参考：停止使用 JWT 认证。JWT适合用于一次性登陆的场景。 优点是服务端消耗更少的资源（不用去保存状态）。 一般jwt保存在localStorage里面，泄漏了jwt同样会导致身份被盗用。可以通过在payload里面设置过期时间来避免泄漏后造成的风险。所以“更安全”不成立。" />
+<meta property="og:description" content="发现只有在写博客的时候，才会认真地去学习。总结一下我在学习、写前后端项目中的一些有关身份验证的心得体会。 因为HTTP是无状态的，如何保证用户和用户之间的操作隔离开来，如何保证有些接口、页面只有某些用户才能访问。一般通过下面的方式实现： 1.cookie方案 原理 这种方式依赖没用禁用cookie浏览器环境。 step1：客户端请求登陆接口，服务端返回200状态码同时把cookie给客户端。 step2：客户端在需要身份验证的接口上带上cookie。 step3：服务端把cookie取出、解析后就可以知道身份了。 那session（会话）又是什么？session不是一个实体，而是基于cookie来维持会话状态的一种技术。有些敏感信息存储在客户端导致不安全，所以服务端在创建session的时候生成一个session_id通过cookie传给客户端。而服务端维持一个 session_id -&gt; session 类似的哈希结构。 一般来说session是在内存中的，但是通常会把这个哈希结构用KV(键值对)数据库来存储，这样做的好处是方便管理，而且在分布式的环境下也可以。 服务端大致实现思路： const http = require(&#39;http&#39;) const server = http.createServer((req, res) =&gt; { if (req.url === &#39;/login&#39;){ // 从数据库中验证账号密码正确（略） // 保存下面这个SESSION_ID（略） // 设置响应头 res.writeHead(200, { &#39;Content-Type&#39;: &#39;application/json&#39;, &#39;Set-Cookie&#39;: &#39;SESSION_ID=abcdefg; HttpOnly;&#39; }) // 返回响应 res.write(JSON.stringify({ code: 200, msg: &#39;OK&#39; })) res.end() } // 匹配其他路由 else { if (req.headers.cookie &amp;&amp; isValid(req.headers.cookie)){ // 解析cookie并验证，验证通过做一些事情 // 验证失败则返回code 401 res.write(&#39;OK&#39;) res.end() } } }) server.listen(3000) 前端需要注意：使用fetch时默认不携带cookie，需要手动设置。在XMLHttpRequest中也是。 // Fetch fetch({ //cookie既可以同域发送，也可以跨域发送 credentials: &#39;include&#39; }) // XMLHttpRequest xhr.withCredentials = true 安全 首先，没用绝对的安全。只能通过一些手段来提高安全性。 1.在set-cookie的时候使用HttpOnly。这样可以防止客户端通过JS来获取cookie，在一些XSS攻击中可能会导致cookie泄漏。 2.HTTPS。在传输过程中cookie不会以明文的方式传递，就算被第三方截取，也是加密过的。 3.服务端的session过期机制。 Token方案 在一些非浏览器环境下（当然浏览器环境也可以使用该方案），如微信小程序、APP中等前端如何和后端通信。其实原理和上面说的是一样的。 原理 step1：客户端请求登陆接口，服务端返回Token，且客户端手动将Token保存。 step2：客户端发起请求的时候将Token带上。 step3：服务端解析Token。 不同就在于需要手动去存储这个凭证。 安全 1.Token设置过期时间，增加刷新机制。 2.HTTPS。 JWT JWT(JSON Web Token)，我过去对JWT的理解是错误的。 参考：停止使用 JWT 认证。JWT适合用于一次性登陆的场景。 优点是服务端消耗更少的资源（不用去保存状态）。 一般jwt保存在localStorage里面，泄漏了jwt同样会导致身份被盗用。可以通过在payload里面设置过期时间来避免泄漏后造成的风险。所以“更安全”不成立。" />
+<link rel="canonical" href="https://ranjiayu.github.io/2018/10/20/cookie-session-jwt.html" />
+<meta property="og:url" content="https://ranjiayu.github.io/2018/10/20/cookie-session-jwt.html" />
+<meta property="og:site_name" content="jiayu’s blog" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2018-10-20T19:42:00+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Cookie/Session/JWT" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2018-10-20T19:42:00+08:00","datePublished":"2018-10-20T19:42:00+08:00","description":"发现只有在写博客的时候，才会认真地去学习。总结一下我在学习、写前后端项目中的一些有关身份验证的心得体会。 因为HTTP是无状态的，如何保证用户和用户之间的操作隔离开来，如何保证有些接口、页面只有某些用户才能访问。一般通过下面的方式实现： 1.cookie方案 原理 这种方式依赖没用禁用cookie浏览器环境。 step1：客户端请求登陆接口，服务端返回200状态码同时把cookie给客户端。 step2：客户端在需要身份验证的接口上带上cookie。 step3：服务端把cookie取出、解析后就可以知道身份了。 那session（会话）又是什么？session不是一个实体，而是基于cookie来维持会话状态的一种技术。有些敏感信息存储在客户端导致不安全，所以服务端在创建session的时候生成一个session_id通过cookie传给客户端。而服务端维持一个 session_id -&gt; session 类似的哈希结构。 一般来说session是在内存中的，但是通常会把这个哈希结构用KV(键值对)数据库来存储，这样做的好处是方便管理，而且在分布式的环境下也可以。 服务端大致实现思路： const http = require(&#39;http&#39;) const server = http.createServer((req, res) =&gt; { if (req.url === &#39;/login&#39;){ // 从数据库中验证账号密码正确（略） // 保存下面这个SESSION_ID（略） // 设置响应头 res.writeHead(200, { &#39;Content-Type&#39;: &#39;application/json&#39;, &#39;Set-Cookie&#39;: &#39;SESSION_ID=abcdefg; HttpOnly;&#39; }) // 返回响应 res.write(JSON.stringify({ code: 200, msg: &#39;OK&#39; })) res.end() } // 匹配其他路由 else { if (req.headers.cookie &amp;&amp; isValid(req.headers.cookie)){ // 解析cookie并验证，验证通过做一些事情 // 验证失败则返回code 401 res.write(&#39;OK&#39;) res.end() } } }) server.listen(3000) 前端需要注意：使用fetch时默认不携带cookie，需要手动设置。在XMLHttpRequest中也是。 // Fetch fetch({ //cookie既可以同域发送，也可以跨域发送 credentials: &#39;include&#39; }) // XMLHttpRequest xhr.withCredentials = true 安全 首先，没用绝对的安全。只能通过一些手段来提高安全性。 1.在set-cookie的时候使用HttpOnly。这样可以防止客户端通过JS来获取cookie，在一些XSS攻击中可能会导致cookie泄漏。 2.HTTPS。在传输过程中cookie不会以明文的方式传递，就算被第三方截取，也是加密过的。 3.服务端的session过期机制。 Token方案 在一些非浏览器环境下（当然浏览器环境也可以使用该方案），如微信小程序、APP中等前端如何和后端通信。其实原理和上面说的是一样的。 原理 step1：客户端请求登陆接口，服务端返回Token，且客户端手动将Token保存。 step2：客户端发起请求的时候将Token带上。 step3：服务端解析Token。 不同就在于需要手动去存储这个凭证。 安全 1.Token设置过期时间，增加刷新机制。 2.HTTPS。 JWT JWT(JSON Web Token)，我过去对JWT的理解是错误的。 参考：停止使用 JWT 认证。JWT适合用于一次性登陆的场景。 优点是服务端消耗更少的资源（不用去保存状态）。 一般jwt保存在localStorage里面，泄漏了jwt同样会导致身份被盗用。可以通过在payload里面设置过期时间来避免泄漏后造成的风险。所以“更安全”不成立。","headline":"Cookie/Session/JWT","mainEntityOfPage":{"@type":"WebPage","@id":"https://ranjiayu.github.io/2018/10/20/cookie-session-jwt.html"},"url":"https://ranjiayu.github.io/2018/10/20/cookie-session-jwt.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://ranjiayu.github.io/feed.xml" title="jiayu&apos;s blog" /></head>
+<body><header class="site-header" role="banner">
 
+  <div class="wrapper"><a class="site-title" rel="author" href="/">jiayu&#39;s blog</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
 
-<head>
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="description" content="发现只有在写博客的时候，才会认真地去学习。总结一下我在学习、写前后端项目中的一些有关身份验证的心得体会。  因为HTTP是无状态的，如何保证用户和用户之间的操作隔离开来，如何保证有些接口、页面只有某些用户才能访问。一般通过下面的方式实现：  1.cookie方案  原理  这种方式依赖没用禁用cookie浏览器环..." />
-  <link rel="canonical" href="/2018/10/20/cookie-session-jwt.html" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="preload" href="/assets/fonts/open-sans-v17-latin-regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
-  <link rel="preload" href="/assets/fonts/open-sans-v17-latin-regular.woff" as="font" type="font/woff" crossorigin="anonymous">
-  <link rel="stylesheet" href="/assets/main.css"/>
-  <link rel="alternate" type="application/rss+xml" title="Jiayu" href="/feed.xml" />
-  <title>Cookie/Session/JWT</title>
-  
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "BlogPosting",
-        "author": "",
-        "datePublished": "2018-10-20T19:42:00+08:00",
-        "headline": "Cookie/Session/JWT",
-        "url": "/2018/10/20/cookie-session-jwt.html",
-        "inLanguage": "en-US",
-        "isFamilyFriendly": "true",
-        "keywords": "cookie, session, jwt",
-        "image": "/favicon.ico",
-        "mainEntityOfPage": {
-          "@type": "WebPage",
-          "@id": "/2018/10/20/cookie-session-jwt.html"
-       }
-      }
-    </script>
-  
-</head>
-
-<body>
-<div class="container">
-  <nav class="top-nav">
-  <a class="nav-item" href='/'>Home</a>
-  | <a class="nav-item" href='/tags'>Tags</a>
-  | <a class="nav-item" href='/about'>About</a>
-  | <a class="nav-item" href="/feed.xml">RSS</a>
-  | <a class="nav-item dark-light-switch" href="#"></a>
-</nav>
-
-  <hr class="stylish"/>
-  <div class="_progress-wrapper">
-  <div id="_progress"></div>
-</div>
-
-<header>
-  <h1>Cookie/Session/JWT</h1>
-  <header class="title-tags">
-    <time datetime="2018-10-20T19:42:00+08:00">20 October, 2018. It was a Saturday.</time>
-    <div class="tags-container">
-      Posted under <span>
-          
-            <a class="tags" href="/tags#cookie">cookie</a>
-          
-            <a class="tags" href="/tags#session">session</a>
-          
-            <a class="tags" href="/tags#jwt">jwt</a>
-          
-        </span>
-      &nbsp;
-    </div>
-  </header>
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
 </header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
 
-<hr class="stylish" />
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Cookie/Session/JWT</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2018-10-20T19:42:00+08:00" itemprop="datePublished">Oct 20, 2018
+      </time></p>
+  </header>
 
-<main role="main">
-
-  <article>
-
-    <section class="content">
-      <p>发现只有在写博客的时候，才会认真地去学习。总结一下我在学习、写前后端项目中的一些有关身份验证的心得体会。</p>
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>发现只有在写博客的时候，才会认真地去学习。总结一下我在学习、写前后端项目中的一些有关身份验证的心得体会。</p>
 
 <p>因为HTTP是无状态的，如何保证用户和用户之间的操作隔离开来，如何保证有些接口、页面只有某些用户才能访问。一般通过下面的方式实现：</p>
 
@@ -185,34 +156,34 @@
 <p>一般jwt保存在localStorage里面，泄漏了jwt同样会导致身份被盗用。可以通过在payload里面设置过期时间来避免泄漏后造成的风险。所以“更安全”不成立。</p>
 
 
-    </section>
+  </div><a class="u-url" href="/2018/10/20/cookie-session-jwt.html" hidden></a>
+</article>
 
-    <hr class="stylish"/>
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
 
-    <section class="pagination">
-      
-      <a class="prev" href="/2018/09/29/autumn-interview.html">&laquo; 秋招面试记录</a>
-      
-      
-      <a class="next" href="/2020/02/09/ss-server.html">SS安装记录 &raquo;</a>
-      
-    </section>
+  <div class="wrapper">
 
-  </article>
+    <h2 class="footer-heading">jiayu&#39;s blog</h2>
 
-</main>
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">jiayu&#39;s blog</li><li><a class="u-email" href="mailto:ranjiayu@outlook.com">ranjiayu@outlook.com</a></li></ul>
+      </div>
 
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/ranjiayu"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">ranjiayu</span></a></li></ul>
 </div>
-<footer>
-  <hr class="stylish"/>
-  <div>
-    Theme: <a href="https://github.com/abhn/Elementary">Elementary</a>
-    <br/>
-    <a>Jiayu</a> &copy; 2024
+
+      <div class="footer-col footer-col-3">
+        <p>Web development,program,java,frontend,ruby,nodejs</p>
+      </div>
+    </div>
+
   </div>
+
 </footer>
-
-  <script src="/assets/main.js"></script>
-
 </body>
+
 </html>

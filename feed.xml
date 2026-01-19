@@ -1,4 +1,92 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2024-08-05T15:08:49+08:00</updated><id>/feed.xml</id><title type="html">Jiayu</title><subtitle>Jiayu&apos;s blog</subtitle><entry><title type="html">Vert.x 笔记</title><link href="/2024/03/05/vertx-01.html" rel="alternate" type="text/html" title="Vert.x 笔记" /><published>2024-03-05T06:46:00+08:00</published><updated>2024-03-05T06:46:00+08:00</updated><id>/2024/03/05/vertx-01</id><content type="html" xml:base="/2024/03/05/vertx-01.html"><![CDATA[<p>很久没有写技术相关的内容了。最近在写一个TCPSocket服务器，用于与硬件交互，由于是自定义协议，所以涉及到了一些字节流处理。</p>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.4.1">Jekyll</generator><link href="https://ranjiayu.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ranjiayu.github.io/" rel="alternate" type="text/html" /><updated>2026-01-19T19:21:39+08:00</updated><id>https://ranjiayu.github.io/feed.xml</id><title type="html">jiayu’s blog</title><subtitle>Web development,program,java,frontend,ruby,nodejs</subtitle><entry><title type="html">Trying JRuby on rails</title><link href="https://ranjiayu.github.io/2026/01/19/jruby-on-rails.html" rel="alternate" type="text/html" title="Trying JRuby on rails" /><published>2026-01-19T07:46:00+08:00</published><updated>2026-01-19T07:46:00+08:00</updated><id>https://ranjiayu.github.io/2026/01/19/jruby-on-rails</id><content type="html" xml:base="https://ranjiayu.github.io/2026/01/19/jruby-on-rails.html"><![CDATA[<p>There is a project which was built with Rails 8 + SolidCache + SolidQueue. Recently I switched it to Rails 7.2 (jruby 10.0.2.0 (3.4.2) 2025-08-07 cba6031bd0 OpenJDK 64-Bit Server VM 21.0.9+15-LTS on 21.0.9+15-LTS +indy +jit [x86_64-linux] ).</p>
+
+<p>Here is some my note.</p>
+
+<ol>
+  <li>Modify Gemfile &amp;&amp; bundle install</li>
+</ol>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+# gem "rails", "~&gt; 8.1.1"
+gem "rails", "~&gt; 7.2.0"
+
+# gem "pg"
+gem "activerecord-jdbcpostgresql-adapter", "~&gt; 72.0", :platform =&gt; :jruby
+
+# gem "solid_queue"
+# good_job is a background job library using postgresql.
+gem "good_job", "~&gt; 4.13.1"
+
+gem "warbler", "~&gt; 2.1.0"
+
+</code></pre></div></div>
+
+<ol>
+  <li>Replace C dependencies (if exist)</li>
+</ol>
+
+<p>Replace C libraries(like “pg”) with java libraries. Put jars in lib/java</p>
+
+<ol>
+  <li>Generate warble configuration</li>
+</ol>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>jruby <span class="nt">-S</span> warble config
+</code></pre></div></div>
+
+<p>config/warble.rb</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="no">Warbler</span><span class="o">::</span><span class="no">Config</span><span class="p">.</span><span class="nf">new</span> <span class="k">do</span> <span class="o">|</span><span class="n">config</span><span class="o">|</span>
+  <span class="n">config</span><span class="p">.</span><span class="nf">features</span> <span class="o">=</span> <span class="sx">%w(runnable)</span>
+  <span class="n">config</span><span class="p">.</span><span class="nf">dirs</span> <span class="o">=</span> <span class="sx">%w(app config db lib log script vendor tmp)</span>
+  <span class="n">config</span><span class="p">.</span><span class="nf">includes</span> <span class="o">=</span> <span class="no">FileList</span><span class="p">[</span><span class="s2">"config.ru"</span><span class="p">,</span> <span class="s2">"Rakefile"</span><span class="p">]</span>
+  <span class="n">config</span><span class="p">.</span><span class="nf">java_libs</span> <span class="o">+=</span> <span class="no">FileList</span><span class="p">[</span><span class="s2">"lib/java/*.jar"</span><span class="p">]</span>
+  <span class="n">config</span><span class="p">.</span><span class="nf">gems</span><span class="p">[</span><span class="s2">"rails"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"7.2.3"</span>
+  <span class="n">config</span><span class="p">.</span><span class="nf">jar_extension</span> <span class="o">=</span> <span class="s2">"jar"</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>background job rake task: lib/tasks/good_job.rake</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">namespace</span> <span class="ss">:job</span> <span class="k">do</span>
+  <span class="n">desc</span> <span class="s2">"start good_job"</span>
+  <span class="n">task</span> <span class="ss">start: :environment</span> <span class="k">do</span>
+    <span class="vg">$stdout</span><span class="p">.</span><span class="nf">sync</span> <span class="o">=</span> <span class="kp">true</span>
+    <span class="vg">$stderr</span><span class="p">.</span><span class="nf">sync</span> <span class="o">=</span> <span class="kp">true</span>
+
+    <span class="n">stdout_logger</span> <span class="o">=</span> <span class="no">ActiveSupport</span><span class="o">::</span><span class="no">Logger</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="no">STDOUT</span><span class="p">)</span>
+    <span class="n">log_level</span> <span class="o">=</span> <span class="p">(</span><span class="no">ENV</span><span class="p">[</span><span class="s2">"RAILS_LOG_LEVEL"</span><span class="p">]</span> <span class="o">||</span> <span class="s2">"INFO"</span><span class="p">).</span><span class="nf">upcase</span>
+    <span class="n">stdout_logger</span><span class="p">.</span><span class="nf">level</span> <span class="o">=</span> <span class="no">ActiveSupport</span><span class="o">::</span><span class="no">Logger</span><span class="p">.</span><span class="nf">const_get</span><span class="p">(</span><span class="n">log_level</span><span class="p">)</span>
+    <span class="n">stdout_logger</span><span class="p">.</span><span class="nf">formatter</span> <span class="o">=</span> <span class="no">ActiveSupport</span><span class="o">::</span><span class="no">Logger</span><span class="o">::</span><span class="no">Formatter</span><span class="p">.</span><span class="nf">new</span>
+    <span class="no">Rails</span><span class="p">.</span><span class="nf">logger</span> <span class="o">=</span> <span class="n">stdout_logger</span>
+    <span class="no">ActiveRecord</span><span class="o">::</span><span class="no">Base</span><span class="p">.</span><span class="nf">logger</span> <span class="o">=</span> <span class="n">stdout_logger</span>
+    <span class="no">GoodJob</span><span class="p">.</span><span class="nf">logger</span> <span class="o">=</span> <span class="n">stdout_logger</span>
+    <span class="no">GoodJob</span><span class="o">::</span><span class="no">CLI</span><span class="p">.</span><span class="nf">start</span><span class="p">([])</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<ol>
+  <li>Pack</li>
+</ol>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>jruby <span class="nt">-S</span> warble
+</code></pre></div></div>
+
+<ol>
+  <li>Run</li>
+</ol>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="c"># migration</span>
+java <span class="nt">-jar</span> app.jar <span class="nt">-S</span> rails db:migrate
+
+<span class="c"># web</span>
+java <span class="nt">-jar</span> app.jar <span class="nt">-S</span> rails s
+
+<span class="c"># job</span>
+java <span class="nt">-jar</span> app.jar <span class="nt">-S</span> rake job:start
+</code></pre></div></div>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[There is a project which was built with Rails 8 + SolidCache + SolidQueue. Recently I switched it to Rails 7.2 (jruby 10.0.2.0 (3.4.2) 2025-08-07 cba6031bd0 OpenJDK 64-Bit Server VM 21.0.9+15-LTS on 21.0.9+15-LTS +indy +jit [x86_64-linux] ).]]></summary></entry><entry><title type="html">Vert.x 笔记</title><link href="https://ranjiayu.github.io/2024/03/05/vertx-01.html" rel="alternate" type="text/html" title="Vert.x 笔记" /><published>2024-03-05T06:46:00+08:00</published><updated>2024-03-05T06:46:00+08:00</updated><id>https://ranjiayu.github.io/2024/03/05/vertx-01</id><content type="html" xml:base="https://ranjiayu.github.io/2024/03/05/vertx-01.html"><![CDATA[<p>很久没有写技术相关的内容了。最近在写一个TCPSocket服务器，用于与硬件交互，由于是自定义协议，所以涉及到了一些字节流处理。</p>
 
 <p>在同事的推荐下使用了Vert.x，以下是一些我的理解和学习笔记。</p>
 
@@ -55,7 +143,7 @@
 
 <p><a href="https://draveness.me/whys-the-design-tcp-message-frame/">https://draveness.me/whys-the-design-tcp-message-frame/</a></p>
 
-<p><a href="https://blog.csdn.net/neosmith/article/details/93724102">https://blog.csdn.net/neosmith/article/details/93724102</a></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[很久没有写技术相关的内容了。最近在写一个TCPSocket服务器，用于与硬件交互，由于是自定义协议，所以涉及到了一些字节流处理。]]></summary></entry><entry><title type="html">关西之旅</title><link href="/2023/12/23/visit-japan.html" rel="alternate" type="text/html" title="关西之旅" /><published>2023-12-23T06:46:00+08:00</published><updated>2023-12-23T06:46:00+08:00</updated><id>/2023/12/23/visit-japan</id><content type="html" xml:base="/2023/12/23/visit-japan.html"><![CDATA[<p>时间：10.14-10.21</p>
+<p><a href="https://blog.csdn.net/neosmith/article/details/93724102">https://blog.csdn.net/neosmith/article/details/93724102</a></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[很久没有写技术相关的内容了。最近在写一个TCPSocket服务器，用于与硬件交互，由于是自定义协议，所以涉及到了一些字节流处理。]]></summary></entry><entry><title type="html">关西之旅</title><link href="https://ranjiayu.github.io/2023/12/23/visit-japan.html" rel="alternate" type="text/html" title="关西之旅" /><published>2023-12-23T06:46:00+08:00</published><updated>2023-12-23T06:46:00+08:00</updated><id>https://ranjiayu.github.io/2023/12/23/visit-japan</id><content type="html" xml:base="https://ranjiayu.github.io/2023/12/23/visit-japan.html"><![CDATA[<p>时间：10.14-10.21</p>
 
 <p>地点：🇯🇵大阪-神户-京都</p>
 
@@ -92,7 +180,7 @@
 <img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202312231025443.jpg" alt="岚山" /></p>
 
 <p><em>京都小巷</em>
-<img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202312231025427.jpg" alt="京都小巷" /></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[时间：10.14-10.21]]></summary></entry><entry><title type="html">2023年欧洲的最后一游：葡萄牙</title><link href="/2023/11/19/portugal.html" rel="alternate" type="text/html" title="2023年欧洲的最后一游：葡萄牙" /><published>2023-11-19T08:00:00+08:00</published><updated>2023-11-19T08:00:00+08:00</updated><id>/2023/11/19/portugal</id><content type="html" xml:base="/2023/11/19/portugal.html"><![CDATA[<p>无意间发现自己还有一个博客:)，就来更新一下吧。</p>
+<img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202312231025427.jpg" alt="京都小巷" /></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[时间：10.14-10.21]]></summary></entry><entry><title type="html">2023年欧洲的最后一游：葡萄牙</title><link href="https://ranjiayu.github.io/2023/11/19/portugal.html" rel="alternate" type="text/html" title="2023年欧洲的最后一游：葡萄牙" /><published>2023-11-19T08:00:00+08:00</published><updated>2023-11-19T08:00:00+08:00</updated><id>https://ranjiayu.github.io/2023/11/19/portugal</id><content type="html" xml:base="https://ranjiayu.github.io/2023/11/19/portugal.html"><![CDATA[<p>无意间发现自己还有一个博客:)，就来更新一下吧。</p>
 
 <hr />
 
@@ -133,7 +221,7 @@
 <p>第四天就是在Lagos的kayak之旅，从一个海岸口划到另外一个海岸口，途中穿越很多海边的岩石洞穴。有趣的是，当天中午我朋友的论文还在最后的挣扎阶段，于是我们早上跑到一家咖啡厅，坐下后开始生死时速地水毕业论文(没想到出来旅游还得学习，到底是爱学习还是不爱学习)，最终在ddl前提交了毕业论文。</p>
 
 <p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202311201259144.jpg" alt="Kayak" />
-<em>Kayak</em></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[无意间发现自己还有一个博客:)，就来更新一下吧。]]></summary></entry><entry><title type="html">布拉格&amp;amp;维也纳&amp;amp;因特拉肯之旅</title><link href="/2023/08/01/visit-prague-wien-ch.html" rel="alternate" type="text/html" title="布拉格&amp;amp;维也纳&amp;amp;因特拉肯之旅" /><published>2023-08-01T08:00:00+08:00</published><updated>2023-08-01T08:00:00+08:00</updated><id>/2023/08/01/visit-prague-wien-ch</id><content type="html" xml:base="/2023/08/01/visit-prague-wien-ch.html"><![CDATA[<h2 id="布拉格">🇨🇿布拉格</h2>
+<em>Kayak</em></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[无意间发现自己还有一个博客:)，就来更新一下吧。]]></summary></entry><entry><title type="html">布拉格&amp;amp;维也纳&amp;amp;因特拉肯之旅</title><link href="https://ranjiayu.github.io/2023/08/01/visit-prague-wien-ch.html" rel="alternate" type="text/html" title="布拉格&amp;amp;维也纳&amp;amp;因特拉肯之旅" /><published>2023-08-01T08:00:00+08:00</published><updated>2023-08-01T08:00:00+08:00</updated><id>https://ranjiayu.github.io/2023/08/01/visit-prague-wien-ch</id><content type="html" xml:base="https://ranjiayu.github.io/2023/08/01/visit-prague-wien-ch.html"><![CDATA[<h2 id="布拉格">🇨🇿布拉格</h2>
 <p>时间：7.3-7.5</p>
 
 <p>由于到达布拉格已经是晚上，到达酒店接近凌晨，放好行李后，尝了当地美食麦当劳以后就在街上随便逛逛。布拉格的夜生活非常丰富，即使是在凌晨，街道上仍然来来往往。各种酒吧、俱乐部都在营业。可能是因为游客多的原因，感觉市中心治安还不错。</p>
@@ -175,7 +263,7 @@
 <p>在回日内瓦的途中，在施皮茨小镇也停留了一下，看了下中世纪的城堡，欣赏了一下图恩湖的景色。</p>
 
 <p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202308011513273.jpg" alt="因特拉肯" />
-<em>因特拉肯</em></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[🇨🇿布拉格 时间：7.3-7.5]]></summary></entry><entry><title type="html">罗马之旅</title><link href="/2023/06/18/visit-roma.html" rel="alternate" type="text/html" title="罗马之旅" /><published>2023-06-18T08:00:00+08:00</published><updated>2023-06-18T08:00:00+08:00</updated><id>/2023/06/18/visit-roma</id><content type="html" xml:base="/2023/06/18/visit-roma.html"><![CDATA[<p>在考试结束后，2023.5.29 - 2023.6.2 很短的几天去了一趟🇮🇹意大利罗马。</p>
+<em>因特拉肯</em></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[🇨🇿布拉格 时间：7.3-7.5]]></summary></entry><entry><title type="html">罗马之旅</title><link href="https://ranjiayu.github.io/2023/06/18/visit-roma.html" rel="alternate" type="text/html" title="罗马之旅" /><published>2023-06-18T08:00:00+08:00</published><updated>2023-06-18T08:00:00+08:00</updated><id>https://ranjiayu.github.io/2023/06/18/visit-roma</id><content type="html" xml:base="https://ranjiayu.github.io/2023/06/18/visit-roma.html"><![CDATA[<p>在考试结束后，2023.5.29 - 2023.6.2 很短的几天去了一趟🇮🇹意大利罗马。</p>
 
 <p>5.29晚上从纽卡斯尔出发，前往London Stansted机场，我是坐的晚上的National Express过去，大巴上没有几个人，但是机场很多人睡在地上，等待凌晨4点的值机，大家都是坐廉价航空的穷人。</p>
 
@@ -215,7 +303,7 @@
 
 <p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202306181349039.jpg" alt="街道上的出水口" /></p>
 
-<p><em>街道上的出水口</em></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[在考试结束后，2023.5.29 - 2023.6.2 很短的几天去了一趟🇮🇹意大利罗马。]]></summary></entry><entry><title type="html">法国&amp;amp;西班牙之旅</title><link href="/2023/04/25/visit-france-spain.html" rel="alternate" type="text/html" title="法国&amp;amp;西班牙之旅" /><published>2023-04-25T08:00:00+08:00</published><updated>2023-04-25T08:00:00+08:00</updated><id>/2023/04/25/visit-france-spain</id><content type="html" xml:base="/2023/04/25/visit-france-spain.html"><![CDATA[<p>在4.9-4.19期间去了法国巴黎、里昂、尼斯以及西班牙的巴塞罗那、马德里。</p>
+<p><em>街道上的出水口</em></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[在考试结束后，2023.5.29 - 2023.6.2 很短的几天去了一趟🇮🇹意大利罗马。]]></summary></entry><entry><title type="html">法国&amp;amp;西班牙之旅</title><link href="https://ranjiayu.github.io/2023/04/25/visit-france-spain.html" rel="alternate" type="text/html" title="法国&amp;amp;西班牙之旅" /><published>2023-04-25T08:00:00+08:00</published><updated>2023-04-25T08:00:00+08:00</updated><id>https://ranjiayu.github.io/2023/04/25/visit-france-spain</id><content type="html" xml:base="https://ranjiayu.github.io/2023/04/25/visit-france-spain.html"><![CDATA[<p>在4.9-4.19期间去了法国巴黎、里昂、尼斯以及西班牙的巴塞罗那、马德里。</p>
 
 <h3 id="法国-france">🇫🇷法国 France</h3>
 
@@ -249,7 +337,7 @@
 
 <p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202304260013434.jpeg" alt="西班牙广场" /></p>
 
-<p><em>西班牙广场</em></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[在4.9-4.19期间去了法国巴黎、里昂、尼斯以及西班牙的巴塞罗那、马德里。]]></summary></entry><entry><title type="html">阿姆斯特丹之旅</title><link href="/2023/04/20/visit-in-netherlands.html" rel="alternate" type="text/html" title="阿姆斯特丹之旅" /><published>2023-04-20T08:10:30+08:00</published><updated>2023-04-20T08:10:30+08:00</updated><id>/2023/04/20/visit-in-netherlands</id><content type="html" xml:base="/2023/04/20/visit-in-netherlands.html"><![CDATA[<p>在复活节开始前，三月底，背上书包坐上廉航直接去了🇳🇱荷兰首都阿姆斯特丹，进行了短短三天的游览。主要目的地为：国立博物馆、梵高博物馆、赞丹风车村、库肯霍夫（Keukenhof）郁金香园。</p>
+<p><em>西班牙广场</em></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[在4.9-4.19期间去了法国巴黎、里昂、尼斯以及西班牙的巴塞罗那、马德里。]]></summary></entry><entry><title type="html">阿姆斯特丹之旅</title><link href="https://ranjiayu.github.io/2023/04/20/visit-in-netherlands.html" rel="alternate" type="text/html" title="阿姆斯特丹之旅" /><published>2023-04-20T08:10:30+08:00</published><updated>2023-04-20T08:10:30+08:00</updated><id>https://ranjiayu.github.io/2023/04/20/visit-in-netherlands</id><content type="html" xml:base="https://ranjiayu.github.io/2023/04/20/visit-in-netherlands.html"><![CDATA[<p>在复活节开始前，三月底，背上书包坐上廉航直接去了🇳🇱荷兰首都阿姆斯特丹，进行了短短三天的游览。主要目的地为：国立博物馆、梵高博物馆、赞丹风车村、库肯霍夫（Keukenhof）郁金香园。</p>
 
 <p>荷兰，风车王国。Amster<strong>dam</strong>，阿姆斯特尔河上的水坝。的确，这种城市被运河所充满，市中心随处可见的河流与桥，有时在不同的街道却给人一种「刚刚来过」的感觉。随处可见的阿姆斯特丹的旗帜是三个叉，代表着火灾、洪水和黑死病，由于它的自由与开放，同时它也被戏称为「黄赌毒」。因为大麻合法，走在阿姆斯特丹的大街小巷，经常会闻到一股飘来的大麻味。</p>
 
@@ -266,7 +354,7 @@
 <p>梵高，一位30岁才开始学习画画，37岁就结束生命一位伟大的画家。一位郁郁不得志的画家，在那个时代没有人能够理解他，生前只卖出过一副作品，不得不让人感叹。早期痴迷宗教却被宗教所抛弃，感情上也是彻头彻尾的失败者，但在绘画艺术上确实天才。从不同时期的画中，可以感受得到他内心与精神状态的变化。</p>
 
 <p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202304201751109.jpeg" alt="梵高的画" />
-<em>梵高的画</em></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[在复活节开始前，三月底，背上书包坐上廉航直接去了🇳🇱荷兰首都阿姆斯特丹，进行了短短三天的游览。主要目的地为：国立博物馆、梵高博物馆、赞丹风车村、库肯霍夫（Keukenhof）郁金香园。]]></summary></entry><entry><title type="html">丹麦&amp;amp;芬兰之旅</title><link href="/2022/12/31/journey-denmark-finland.html" rel="alternate" type="text/html" title="丹麦&amp;amp;芬兰之旅" /><published>2022-12-31T08:10:30+08:00</published><updated>2022-12-31T08:10:30+08:00</updated><id>/2022/12/31/journey-denmark-finland</id><content type="html" xml:base="/2022/12/31/journey-denmark-finland.html"><![CDATA[<p>在圣诞期间去丹麦、芬兰的旅行流水账记录。</p>
+<em>梵高的画</em></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[在复活节开始前，三月底，背上书包坐上廉航直接去了🇳🇱荷兰首都阿姆斯特丹，进行了短短三天的游览。主要目的地为：国立博物馆、梵高博物馆、赞丹风车村、库肯霍夫（Keukenhof）郁金香园。]]></summary></entry><entry><title type="html">丹麦&amp;amp;芬兰之旅</title><link href="https://ranjiayu.github.io/2022/12/31/journey-denmark-finland.html" rel="alternate" type="text/html" title="丹麦&amp;amp;芬兰之旅" /><published>2022-12-31T08:10:30+08:00</published><updated>2022-12-31T08:10:30+08:00</updated><id>https://ranjiayu.github.io/2022/12/31/journey-denmark-finland</id><content type="html" xml:base="https://ranjiayu.github.io/2022/12/31/journey-denmark-finland.html"><![CDATA[<p>在圣诞期间去丹麦、芬兰的旅行流水账记录。</p>
 
 <h2 id="签证办理">签证办理</h2>
 
@@ -422,7 +510,7 @@
 
 <p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202301091609848.JPG" alt="赫尔辛基街道" /></p>
 
-<p><em>赫尔辛基街道</em></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[在圣诞期间去丹麦、芬兰的旅行流水账记录。 签证办理 预约 首先需要在出发前1-2个月预约递签时间，尽早预约最好，在VFS Global官方网站选择好国家后注册账号，填写基本信息，选择递交地点爱丁堡、伦敦、曼彻斯特。申请的国家必须满足两个条件之一：待时间最长的国家；第一入境国家。 材料 在预约成功后，即可开始准备递签所需的材料，每个国家要求递签的材料有微小的差距，以下是我递交芬兰所需材料： 申请表(在对应国家递签的网站中填写并打印，左上角需要有条形码) 护照首页以及护照复印件 BRP正反面复印件 在读证明(芬兰无需特定Title，其他国家需要如冰岛、西班牙) 交通证明(机票预订单, 火车票收据等，如果有跨天机票，则需要多订跨天那一天的酒店，签证到手后退款即可) 行程单(每天的住宿、交通方式以及景点) 酒店住宿预订单(上面必须有包含申请人的姓名) 保险(Coverwise上购买，10+磅一年) 财力证明，最近三个月银行流水(如果不满三个月，需要打印Account Summary并盖章) 预约单 建议加一点钱购买可退的机票，以及订可免费取消的酒店，如果发生意外情况也可以减少损失。 在读证明如果需要加Title(To xxx embassy)以及盖章可能需要额外时间，取决于学校工作人员工作效率。 递签 爱丁堡递签当日，拿到号码后递交材料，如果所需材料不齐，可以当场打印(打印费0.5磅1张A4纸)，无法当场打印的材料通过5工作日内通过邮件提交，以及后续如果材料不齐大使馆会发送邮件要求补齐材料，比如我在递签后通过邮件补交了银行账户信息和火车票。每个工作人员的要求的材料和态度会有微小出入，看运气。 行程准备 BRP, 护照, 行程单, 机票行程单 防水裤, 防水鞋, 冲锋衣, 帽子, 围巾, 泳衣(温泉用, 非必需) 欧标转接插头 洗漱用品, 酒店拖鞋 常用药品(创口贴, 感冒药, 过敏药) 手机卡漫游 🇩🇰丹麦 Denmark 由于12.19冰岛的大暴雪，而且结束日期预计持续多天，不得不改变行程，去往能买到机票最便宜的地方——哥本哈根。 哥本哈根 Copenhagen 交通: 哥本哈根3日卡108欧元，几乎包括了所有主流景点的票和交通（具体见官方），上下车不需要刷卡，如果有人查票出示即可。 住宿: Hotel Alexandra 行程: Day0: 到达哥本哈根酒店 Hotel Alexandra，房间虽小不过一切都够用，性价比也比较高。 Day1: 市政厅: 附近有安徒生雕塑 哥本哈根博物馆: 介绍了哥本哈根城市的历史 丹麦国家博物馆: 不仅仅是有丹麦的展品，各个国家的都有 Christiansborg Slot: 一个高塔可以看附近的风景 Nyhavn: 新港，五颜六色的房子，网红打卡地 The Little Mermaid: 海边的美人鱼雕塑 Tivoli: 古老的游乐园，当天晚上人很多，有过山车跳楼机等 Day2: Ny Carlsberg Glyptotek: 一个美术馆，包括了埃及、希腊、法国、丹麦的雕塑和画等。 Grundvigs Church: 管风琴教堂，外观和内部设计都非常令人震撼的一个教堂。 Frederik’s Church: Round tower: 圆塔，登顶后看附近繁华的Stroget步行街。 Day3: Louisiana Museum of Modern Art: 离市区稍远，坐火车前往，展品多，景色美 丹麦的物价很高，一瓶矿泉水20-30克朗，1人民币=0.99克朗，吃MC等快餐也要80-100一顿，吃馆子的话人均150以上。 🇫🇮芬兰 Finland 由于到赫尔辛基的时间是12.24，很多商店都不开门，所以需要找到第二天营业的餐厅。在这个网站可以找到相关的信息，列出观光、美食很多意见，交通变动等信息。 本计划参团行，后来改变行程，导致行程安排有一些不合理(比如在Oulu停留一晚，更好的选择是买赫尔辛基到罗瓦涅米的卧铺VR列车，可以省下一晚上住宿)，以下仅供参考。 市内交通： 赫尔辛基: 一日交通卡，在每个地铁站即可购买。 奥卢: 步行 罗瓦涅米: 包车 大交通：赫尔辛基-奥卢, 奥卢-罗瓦涅米 VR列车 赫尔辛基 Helsinki Day0: 到达酒店 Radisson Blu Royal Hotel 酒店附近的 Old Church Park Day1: 赫尔辛基大教堂 Helsinki Catherdal: 人称白教堂 Uspenki Cathedral: 人称红教堂，从大教堂步行至很近，中间会路过港口可以坐船，而且在圣诞节当天也有简易的集市，可以吃饭。 岩石教堂 Temppeliaukion Church: 顾名思义。门票5欧。 西贝柳斯公园 Sibelius Park: 海边的一个公园，有落日的话风景很美，有一些雕塑可以拍照打卡。 奥卢 Oulu / 罗瓦涅米 Rovaniemi 追极光活动和哈士奇驯鹿拉车活动都是从TripAdvisor上购买，活动当天与供应商联系确定接送地点。 Day2: VR列车从赫尔辛基-奥卢，晚上到达奥卢，在市区中稍微转一下，去了离酒店不远处的胖警察雕塑打卡。 酒店 Radisson Blu Hotel 胖警察雕塑 Toripolliisi patsas Day3: VR列车从奥卢-罗瓦涅米，打卡世界上最北的麦当劳，入住民宿当晚追极光 Day4: 逛圣诞老人村，哈士奇驯鹿拉车活动 一些照片 哥本哈根市政厅 眺望哥本哈根市区 新港的彩色房屋 管风琴教堂 赫尔辛基大教堂 赫尔辛基街道]]></summary></entry><entry><title type="html">在纽卡素的第一周</title><link href="/2022/09/27/first-week-in-ncl.html" rel="alternate" type="text/html" title="在纽卡素的第一周" /><published>2022-09-27T23:40:00+08:00</published><updated>2022-09-27T23:40:00+08:00</updated><id>/2022/09/27/first-week-in-ncl</id><content type="html" xml:base="/2022/09/27/first-week-in-ncl.html"><![CDATA[<p>到纽卡素已经一段时间了，记录一下这几日的见闻吧。</p>
+<p><em>赫尔辛基街道</em></p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[在圣诞期间去丹麦、芬兰的旅行流水账记录。 签证办理 预约 首先需要在出发前1-2个月预约递签时间，尽早预约最好，在VFS Global官方网站选择好国家后注册账号，填写基本信息，选择递交地点爱丁堡、伦敦、曼彻斯特。申请的国家必须满足两个条件之一：待时间最长的国家；第一入境国家。 材料 在预约成功后，即可开始准备递签所需的材料，每个国家要求递签的材料有微小的差距，以下是我递交芬兰所需材料： 申请表(在对应国家递签的网站中填写并打印，左上角需要有条形码) 护照首页以及护照复印件 BRP正反面复印件 在读证明(芬兰无需特定Title，其他国家需要如冰岛、西班牙) 交通证明(机票预订单, 火车票收据等，如果有跨天机票，则需要多订跨天那一天的酒店，签证到手后退款即可) 行程单(每天的住宿、交通方式以及景点) 酒店住宿预订单(上面必须有包含申请人的姓名) 保险(Coverwise上购买，10+磅一年) 财力证明，最近三个月银行流水(如果不满三个月，需要打印Account Summary并盖章) 预约单 建议加一点钱购买可退的机票，以及订可免费取消的酒店，如果发生意外情况也可以减少损失。 在读证明如果需要加Title(To xxx embassy)以及盖章可能需要额外时间，取决于学校工作人员工作效率。 递签 爱丁堡递签当日，拿到号码后递交材料，如果所需材料不齐，可以当场打印(打印费0.5磅1张A4纸)，无法当场打印的材料通过5工作日内通过邮件提交，以及后续如果材料不齐大使馆会发送邮件要求补齐材料，比如我在递签后通过邮件补交了银行账户信息和火车票。每个工作人员的要求的材料和态度会有微小出入，看运气。 行程准备 BRP, 护照, 行程单, 机票行程单 防水裤, 防水鞋, 冲锋衣, 帽子, 围巾, 泳衣(温泉用, 非必需) 欧标转接插头 洗漱用品, 酒店拖鞋 常用药品(创口贴, 感冒药, 过敏药) 手机卡漫游 🇩🇰丹麦 Denmark 由于12.19冰岛的大暴雪，而且结束日期预计持续多天，不得不改变行程，去往能买到机票最便宜的地方——哥本哈根。 哥本哈根 Copenhagen 交通: 哥本哈根3日卡108欧元，几乎包括了所有主流景点的票和交通（具体见官方），上下车不需要刷卡，如果有人查票出示即可。 住宿: Hotel Alexandra 行程: Day0: 到达哥本哈根酒店 Hotel Alexandra，房间虽小不过一切都够用，性价比也比较高。 Day1: 市政厅: 附近有安徒生雕塑 哥本哈根博物馆: 介绍了哥本哈根城市的历史 丹麦国家博物馆: 不仅仅是有丹麦的展品，各个国家的都有 Christiansborg Slot: 一个高塔可以看附近的风景 Nyhavn: 新港，五颜六色的房子，网红打卡地 The Little Mermaid: 海边的美人鱼雕塑 Tivoli: 古老的游乐园，当天晚上人很多，有过山车跳楼机等 Day2: Ny Carlsberg Glyptotek: 一个美术馆，包括了埃及、希腊、法国、丹麦的雕塑和画等。 Grundvigs Church: 管风琴教堂，外观和内部设计都非常令人震撼的一个教堂。 Frederik’s Church: Round tower: 圆塔，登顶后看附近繁华的Stroget步行街。 Day3: Louisiana Museum of Modern Art: 离市区稍远，坐火车前往，展品多，景色美 丹麦的物价很高，一瓶矿泉水20-30克朗，1人民币=0.99克朗，吃MC等快餐也要80-100一顿，吃馆子的话人均150以上。 🇫🇮芬兰 Finland 由于到赫尔辛基的时间是12.24，很多商店都不开门，所以需要找到第二天营业的餐厅。在这个网站可以找到相关的信息，列出观光、美食很多意见，交通变动等信息。 本计划参团行，后来改变行程，导致行程安排有一些不合理(比如在Oulu停留一晚，更好的选择是买赫尔辛基到罗瓦涅米的卧铺VR列车，可以省下一晚上住宿)，以下仅供参考。 市内交通： 赫尔辛基: 一日交通卡，在每个地铁站即可购买。 奥卢: 步行 罗瓦涅米: 包车 大交通：赫尔辛基-奥卢, 奥卢-罗瓦涅米 VR列车 赫尔辛基 Helsinki Day0: 到达酒店 Radisson Blu Royal Hotel 酒店附近的 Old Church Park Day1: 赫尔辛基大教堂 Helsinki Catherdal: 人称白教堂 Uspenki Cathedral: 人称红教堂，从大教堂步行至很近，中间会路过港口可以坐船，而且在圣诞节当天也有简易的集市，可以吃饭。 岩石教堂 Temppeliaukion Church: 顾名思义。门票5欧。 西贝柳斯公园 Sibelius Park: 海边的一个公园，有落日的话风景很美，有一些雕塑可以拍照打卡。 奥卢 Oulu / 罗瓦涅米 Rovaniemi 追极光活动和哈士奇驯鹿拉车活动都是从TripAdvisor上购买，活动当天与供应商联系确定接送地点。 Day2: VR列车从赫尔辛基-奥卢，晚上到达奥卢，在市区中稍微转一下，去了离酒店不远处的胖警察雕塑打卡。 酒店 Radisson Blu Hotel 胖警察雕塑 Toripolliisi patsas Day3: VR列车从奥卢-罗瓦涅米，打卡世界上最北的麦当劳，入住民宿当晚追极光 Day4: 逛圣诞老人村，哈士奇驯鹿拉车活动 一些照片 哥本哈根市政厅 眺望哥本哈根市区 新港的彩色房屋 管风琴教堂 赫尔辛基大教堂 赫尔辛基街道]]></summary></entry><entry><title type="html">在纽卡素的第一周</title><link href="https://ranjiayu.github.io/2022/09/27/first-week-in-ncl.html" rel="alternate" type="text/html" title="在纽卡素的第一周" /><published>2022-09-27T23:40:00+08:00</published><updated>2022-09-27T23:40:00+08:00</updated><id>https://ranjiayu.github.io/2022/09/27/first-week-in-ncl</id><content type="html" xml:base="https://ranjiayu.github.io/2022/09/27/first-week-in-ncl.html"><![CDATA[<p>到纽卡素已经一段时间了，记录一下这几日的见闻吧。</p>
 
 <p>纽卡素位于英国兰东北部，靠近苏格兰的一个小城市。有一条河穿流而过，通向北海，名为泰恩河。刚到这里的时候，由于当地说话有一点苏格兰的口音，导致很多时候我听不清楚说的什么单词而闹笑话^_^。</p>
 
@@ -468,28 +556,4 @@
 
 <p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202209251721813.jpg" alt="" height="100%" width="100%" /></p>
 
-<p>以上仅仅只是作为一名学生，到陌生的地方的一些第一印象，所有内容全为自身感受，不代表实际情况。</p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[到纽卡素已经一段时间了，记录一下这几日的见闻吧。 纽卡素位于英国兰东北部，靠近苏格兰的一个小城市。有一条河穿流而过，通向北海，名为泰恩河。刚到这里的时候，由于当地说话有一点苏格兰的口音，导致很多时候我听不清楚说的什么单词而闹笑话^_^。 人 大部分人都是有礼貌的，都会把cheers或者thank you挂在嘴边，不管是否出自于真心，总是会让人觉得舒服。因为有两个大学(Newcastle University 和 Northumbria University)在市中心，所以可以看到各种各样来自世界各地的人。当然英国本身也是一个多文化的国家。 支付 这边的支付方式主要是银行卡、信用卡，也可以手机绑定卡后使用NFC支付(Google Pay/Apple pay)，许多便利店的大部分自助结账机器只支持卡支付。这一点我认为比国内的主流支付方式微信、支付宝扫码更加方便。 存钱到本地银行最方便的不是ATM机器，很多机器只能取出，存钱去邮局。 当然，大部分地方(如便利店、商城、餐厅)也是支持现金支付的。 吃穿住行 天气：多雨多变。10多度的小雨天气，当地人还有穿短裤的。 住：房屋都是独栋一般都是两楼，没有什么高楼大厦，除了像写字楼或者学生公寓会稍微高一点。学生公寓Ensuite的价格在140-200磅一周。 交通：作为英格兰第五大城市，方式有公交、地铁、火车，但价格都不低。 吃：快餐以及各种异国餐厅，异国餐厅价格都很贵，吃一顿人均100+人名币。快餐便宜的4-6磅，贵的8-10磅。 街道：支路街道并没有想象中那么干净，不如国内的街道干净。 COVID 大概95%的人没有戴口罩，差不多已经群体免疫了，要是感染了就是自己吃退烧药自愈。 其他 邮编：这里的邮编精确到每一栋楼，不管是购物还是办理各种证件，邮编都很重要。所以很多正式的信件也是直接投递到信箱，还要每天拿一把钥匙去打开信箱看看是否有邮件，有一种复古的感觉。 网站域名：规范化，例如公司的网站就是co.uk结尾，学校的就是ac.uk结尾。 APP：规范，包括网站都会把隐私政策放在最明显的地方。除了银行以外，其他APP几乎不需要填写一大堆与你无关的信息，如手机号，对必要获取的隐私信息也有详细的说明。强烈鄙视国内的各种厂商恨不得掌握你的所有信息。 工作时间：非常严格，不到时间点商城不开门，非上班时间邮件也常不回复。 以上仅仅只是作为一名学生，到陌生的地方的一些第一印象，所有内容全为自身感受，不代表实际情况。]]></summary></entry><entry><title type="html">新疆伊犁之旅</title><link href="/2022/07/28/journey-in-xinjiang.html" rel="alternate" type="text/html" title="新疆伊犁之旅" /><published>2022-07-28T11:40:00+08:00</published><updated>2022-07-28T11:40:00+08:00</updated><id>/2022/07/28/journey-in-xinjiang</id><content type="html" xml:base="/2022/07/28/journey-in-xinjiang.html"><![CDATA[<p>在独库公路开通后，和高中同学以及同学的同学一起去了新疆。这次走的路线主要是看自然风光，很遗憾没有去南疆的一些具有人文特色的地方。不过新疆这么大，以后还会有机会再去的。</p>
-
-<p>落地乌鲁木齐后就在机场提了车，虽然已经是北京时间晚上8、9点，城市的黄昏才刚刚开始。第二天开始我们从乌鲁木齐出发。大致路线为：乌鲁木齐-&gt;独山子大峡谷-&gt;赛里木湖-&gt;那拉提-&gt;库车-&gt;库尔勒-&gt;乌鲁木齐。</p>
-
-<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202207281151936.jpg" alt="赛里木湖" height="100%" width="100%" />
-<em>赛里木湖</em></p>
-
-<p>赛里木湖绝对是景色里的TOP3，草原、湖泊、树林同时出现在一幅画中，当然必须是在晴天，这样湖面才显得格外的蓝。结束以后就是一段车非常少的高速，直叫把人开到困。都说新疆西藏的美景在路上，的确如此，途中可以看到淡红色且光秃秃的山、死寂的沙漠、远处绿色的草原、潺潺的小流。有一种刚置身于「绝命毒师」中的墨西哥荒漠，又切换到了蒙古大草原的错落感。</p>
-
-<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202207281151950.jpg" alt="独库公路路上" height="100%" width="100%" />
-<em>独库公路路上</em></p>
-
-<p>在新疆由于景点之间遥远，现代人的时间又都是十分珍贵。所以开车的人累，坐车的人也累，难得有时间闲下来发呆。于是在车内进行民主投票后，我们决定在那拉提镇多停留半天。旅行真正有趣的地方就是这样，除了看了所谓的「景点」以外，还有许许多多平时看不到的东西去探索。于是我去当地镇上理了发，不过结果很糟糕。然后等到九点半左右日落的时候，带上西瓜，漫无目的地向西边开，到巩乃斯河边上坐下，欣赏黄昏日落与<del>观察放羊的本地人</del> watching the world go by。</p>
-
-<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202207281151908.jpg" alt="那拉提镇" height="100%" width="100%" />
-<em>那拉提镇</em></p>
-
-<p>旅行的最后一天去了「罗布人村寨」，到的时候比较晚人不多，整个景点不算热门，景色不错，主要也是沙漠湖泊。住在景点中的客栈，晚上可以看到城市中难得一见星空，北斗、夏季大三角……望着星空有时会感叹人的渺小，不管这一生是多么精彩多么悲哀，在宇宙的长河中也不过是一瞬间的罢了，所以在心情不好的时候看看星空，也许什么都看开了。</p>
-
-<p><img src="https://raw.githubusercontent.com/ranjiayu/imgs/main/images/202207281151961.jpg" alt="罗布人村寨" height="100%" width="100%" />
-<em>罗布人村寨</em></p>
-
-<hr />
-
-<p>说到最喜欢的美食，那就是朴实无华的「手抓饭」。黄萝卜、胡萝卜、碎羊肉、米饭、油配合到一起，它的地位类似重庆小面，是很多人本地人的快餐。</p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><summary type="html"><![CDATA[在独库公路开通后，和高中同学以及同学的同学一起去了新疆。这次走的路线主要是看自然风光，很遗憾没有去南疆的一些具有人文特色的地方。不过新疆这么大，以后还会有机会再去的。]]></summary></entry></feed>
+<p>以上仅仅只是作为一名学生，到陌生的地方的一些第一印象，所有内容全为自身感受，不代表实际情况。</p>]]></content><author><name></name></author><category term="journey" /><category term="travel" /><category term="life" /><summary type="html"><![CDATA[到纽卡素已经一段时间了，记录一下这几日的见闻吧。 纽卡素位于英国兰东北部，靠近苏格兰的一个小城市。有一条河穿流而过，通向北海，名为泰恩河。刚到这里的时候，由于当地说话有一点苏格兰的口音，导致很多时候我听不清楚说的什么单词而闹笑话^_^。 人 大部分人都是有礼貌的，都会把cheers或者thank you挂在嘴边，不管是否出自于真心，总是会让人觉得舒服。因为有两个大学(Newcastle University 和 Northumbria University)在市中心，所以可以看到各种各样来自世界各地的人。当然英国本身也是一个多文化的国家。 支付 这边的支付方式主要是银行卡、信用卡，也可以手机绑定卡后使用NFC支付(Google Pay/Apple pay)，许多便利店的大部分自助结账机器只支持卡支付。这一点我认为比国内的主流支付方式微信、支付宝扫码更加方便。 存钱到本地银行最方便的不是ATM机器，很多机器只能取出，存钱去邮局。 当然，大部分地方(如便利店、商城、餐厅)也是支持现金支付的。 吃穿住行 天气：多雨多变。10多度的小雨天气，当地人还有穿短裤的。 住：房屋都是独栋一般都是两楼，没有什么高楼大厦，除了像写字楼或者学生公寓会稍微高一点。学生公寓Ensuite的价格在140-200磅一周。 交通：作为英格兰第五大城市，方式有公交、地铁、火车，但价格都不低。 吃：快餐以及各种异国餐厅，异国餐厅价格都很贵，吃一顿人均100+人名币。快餐便宜的4-6磅，贵的8-10磅。 街道：支路街道并没有想象中那么干净，不如国内的街道干净。 COVID 大概95%的人没有戴口罩，差不多已经群体免疫了，要是感染了就是自己吃退烧药自愈。 其他 邮编：这里的邮编精确到每一栋楼，不管是购物还是办理各种证件，邮编都很重要。所以很多正式的信件也是直接投递到信箱，还要每天拿一把钥匙去打开信箱看看是否有邮件，有一种复古的感觉。 网站域名：规范化，例如公司的网站就是co.uk结尾，学校的就是ac.uk结尾。 APP：规范，包括网站都会把隐私政策放在最明显的地方。除了银行以外，其他APP几乎不需要填写一大堆与你无关的信息，如手机号，对必要获取的隐私信息也有详细的说明。强烈鄙视国内的各种厂商恨不得掌握你的所有信息。 工作时间：非常严格，不到时间点商城不开门，非上班时间邮件也常不回复。 以上仅仅只是作为一名学生，到陌生的地方的一些第一印象，所有内容全为自身感受，不代表实际情况。]]></summary></entry></feed>
